@@ -1,0 +1,180 @@
+import { cache } from "react";
+import { getSession } from "./session";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { ALL_PERMISSIONS, Permission, PERMISSIONS } from "./permissions";
+import { NextResponse } from "next/server";
+import {
+  highestLevel,
+  type ApprovalLevel,
+  type ApproverIdentity,
+} from "@/lib/leave/approval-routing";
+import {
+  resolveDataScope,
+  resolveLeaveScope,
+  type DataScope,
+} from "./data-scope";
+
+// Loads the user fresh from the DB,
+// so deactivation and role changes apply immediately.
+export const getCurrentUser = cache(async () => {
+  const session = await getSession();
+  if (!session) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      isActive: true,
+      mustChangePassword: true,
+      employeeId: true,
+      role: { select: { id: true, name: true, permissions: true } },
+      employee: {
+        select: {
+          id: true,
+          departmentId: true,
+          designation: { select: { approvalLevel: true } },
+          additionalCharges: { select: { departmentId: true } },
+          actingApprovals: { select: { level: true } },
+        },
+      },
+    },
+  });
+
+  if (!user || !user.isActive) return null;
+  // The Admin role always holds every right, including ones added after the role was seeded.
+  if (user.role.name === "ADMIN") {
+    return { ...user, role: { ...user.role, permissions: [...ALL_PERMISSIONS] } };
+  }
+  return user;
+});
+
+export type AuthUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
+
+export function hasPermission(user: AuthUser, ...permissions: Permission[]) {
+  return permissions.some((p) => user.role.permissions.includes(p));
+}
+
+/** For pages / server components. */
+export async function requireUser() {
+  const user = await getCurrentUser();
+  // "?expired" lets the proxy clear a stale cookie, so this cannot loop with the /login redirect
+  if (!user) redirect("/login?expired=1");
+  if (user.mustChangePassword) redirect("/change-password");
+  return user;
+}
+
+// For pages  User needs ANY of the listed permissions.
+export async function requirePermission(...permissions: Permission[]) {
+  const user = await requireUser();
+  if (!hasPermission(user, ...permissions)) redirect("/unauthorized");
+  return user;
+}
+
+/**
+ * The level this person acts at: the level of their designation, or a higher one when they are
+ * the acting CEO / Chairman (set on the Departments page).
+ */
+function effectiveLevel(user: AuthUser): ApprovalLevel {
+  const own: ApprovalLevel =
+    user.employee?.designation?.approvalLevel ?? "STAFF";
+  const acting = user.employee?.actingApprovals.map((a) => a.level) ?? [];
+  return highestLevel([own, ...acting]);
+}
+
+/** The user's place in the leave approval chain (null if not linked to an employee). */
+export function getApproverIdentity(user: AuthUser): ApproverIdentity | null {
+  if (!user.employee) return null;
+  return {
+    employeeId: user.employee.id,
+    departmentId: user.employee.departmentId,
+    level: effectiveLevel(user),
+    chargeDepartmentIds: user.employee.additionalCharges.map(
+      (c) => c.departmentId,
+    ),
+  };
+}
+
+/**
+ * Whose attendance and leave data this user may see (computed fresh on every request):
+ * everything, their own department (DD), or only themselves. See lib/auth/data-scope.ts.
+ */
+export function getDataScope(user: AuthUser): DataScope {
+  return resolveDataScope({
+    permissions: user.role.permissions,
+    level: effectiveLevel(user),
+    employeeId: user.employee?.id ?? null,
+    departmentId: user.employee?.departmentId ?? null,
+    chargeDepartmentIds:
+      user.employee?.additionalCharges.map((c) => c.departmentId) ?? [],
+  });
+}
+
+/** Whose leave requests this user may look at, or null when the Leaves pages are not for them. */
+export function getLeaveScope(user: AuthUser): DataScope | null {
+  return resolveLeaveScope({
+    permissions: user.role.permissions,
+    level: effectiveLevel(user),
+    departmentId: user.employee?.departmentId ?? null,
+    chargeDepartmentIds:
+      user.employee?.additionalCharges.map((c) => c.departmentId) ?? [],
+  });
+}
+
+/** For the Leaves pages: HR sees and manages all, CEO/Chairman see all, a DD sees their department. */
+export async function requireLeaveScope() {
+  const user = await requireUser();
+  const scope = getLeaveScope(user);
+  if (!scope) redirect("/unauthorized");
+  return {
+    user,
+    scope,
+    /** HR-style rights: file on behalf of staff, leave types, cancel anything */
+    canManage: hasPermission(user, PERMISSIONS.LEAVES_MANAGE),
+  };
+}
+
+/** For manager views (department / organization data). Plain employees are sent away. */
+export async function requireScope() {
+  const user = await requireUser();
+  const scope = getDataScope(user);
+  if (scope.kind === "SELF") redirect("/unauthorized");
+  return { user, scope };
+}
+
+type ApiAuthResult =
+  | { ok: true; user: AuthUser }
+  | { ok: false; response: NextResponse };
+
+export async function apiAuth(
+  options: { permissions?: Permission[]; allowPasswordChange?: boolean } = {},
+): Promise<ApiAuthResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+  if (user.mustChangePassword && !options.allowPasswordChange) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Password change required" },
+        { status: 403 },
+      ),
+    };
+  }
+  if (
+    options.permissions?.length &&
+    !hasPermission(user, ...options.permissions)
+  ) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+  return { ok: true, user };
+}
