@@ -444,7 +444,7 @@ export default function DashboardView({
                     label: s.name,
                     color: s.color,
                   })),
-                  { label: "Day off", color: "#cbd5e1" },
+                  { label: "Day off", color: STATUS_COLORS.dayOff },
                   { label: "Holiday", color: STATUS_COLORS.holiday },
                 ]}
               />
