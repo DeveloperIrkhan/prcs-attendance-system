@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import type { ActionState } from "@/lib/action-state";
 import { PERMISSION_GROUPS } from "@/lib/auth/permissions";
+import Spinner from "./Spinner";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -50,6 +51,7 @@ export default function RoleForm({
   return (
     <form ref={formRef} onSubmit={onSubmit} className="w-full space-y-4">
       {initial && <input type="hidden" name="id" value={initial.id} />}
+      {pending && <Spinner />}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
@@ -83,7 +85,10 @@ export default function RoleForm({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {PERMISSION_GROUPS.map((group) => (
-          <fieldset key={group.title} className="space-y-2 rounded-md border p-3">
+          <fieldset
+            key={group.title}
+            className="space-y-2 rounded-md border p-3"
+          >
             <legend className="px-1 text-sm font-semibold text-red-800">
               {group.title}
             </legend>

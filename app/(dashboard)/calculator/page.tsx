@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -8,7 +7,6 @@ import {
   Calculator as CalculatorIcon,
   RotateCcw,
 } from "lucide-react";
-
 export default function CalculatorPage() {
   const [display, setDisplay] = useState("0");
   const [previousValue, setPreviousValue] = useState<string | null>(null);
@@ -31,7 +29,7 @@ export default function CalculatorPage() {
           return second;
       }
     },
-    []
+    [],
   );
 
   const inputDigit = useCallback(
@@ -43,7 +41,7 @@ export default function CalculatorPage() {
         setDisplay(display === "0" ? digit : display + digit);
       }
     },
-    [display, waitingForOperand]
+    [display, waitingForOperand],
   );
 
   const inputDecimal = useCallback(() => {
@@ -75,7 +73,7 @@ export default function CalculatorPage() {
         const result = calculate(
           parseFloat(previousValue),
           inputValue,
-          operator
+          operator,
         );
 
         if (!Number.isFinite(result)) {
@@ -94,7 +92,7 @@ export default function CalculatorPage() {
       setOperator(nextOperator);
       setWaitingForOperand(true);
     },
-    [calculate, display, operator, previousValue, waitingForOperand]
+    [calculate, display, operator, previousValue, waitingForOperand],
   );
 
   const performCalculation = useCallback(() => {
@@ -115,7 +113,7 @@ export default function CalculatorPage() {
     const formatted = Number(result.toPrecision(12));
 
     setHistory((prev) =>
-      [`${first} ${operator} ${second} = ${formatted}`, ...prev].slice(0, 10)
+      [`${first} ${operator} ${second} = ${formatted}`, ...prev].slice(0, 10),
     );
 
     setDisplay(String(formatted));
@@ -160,7 +158,7 @@ export default function CalculatorPage() {
       inputDigit,
       inputOperator,
       performCalculation,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -170,7 +168,11 @@ export default function CalculatorPage() {
 
   const buttons = [
     { label: "AC", style: "utility", action: clear },
-    { label: "±", style: "utility", action: () => setDisplay(String(-parseFloat(display))) },
+    {
+      label: "±",
+      style: "utility",
+      action: () => setDisplay(String(-parseFloat(display))),
+    },
     { label: "%", style: "utility", action: handlePercent },
     { label: "÷", style: "operator", action: () => inputOperator("÷") },
 
@@ -210,9 +212,7 @@ export default function CalculatorPage() {
         <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-indigo-600/20 blur-[120px]" />
         <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-[120px]" />
       </div>
-
       <div className="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-
         {/* Calculator */}
         <section className="rounded-[32px] border border-white/10 bg-slate-900/80 backdrop-blur-2xl shadow-2xl p-5 sm:p-8">
           <div className="flex items-center justify-between mb-8">
@@ -273,10 +273,7 @@ export default function CalculatorPage() {
               0
             </button>
 
-            <button
-              onClick={inputDecimal}
-              className={getButtonStyle("number")}
-            >
+            <button onClick={inputDecimal} className={getButtonStyle("number")}>
               .
             </button>
 

@@ -10,6 +10,20 @@ const LOCK_MINUTES = 15;
 const INVALID = { error: "Invalid email or password" };
 
 export async function POST(request: Request) {
+  try {
+    return await login(request);
+  } catch (error) {
+    // Without this, an unreachable database or a missing SESSION_SECRET surfaces as an
+    // HTML error page, which the client cannot parse and reports as a vague network error.
+    console.error("Login failed:", error);
+    return NextResponse.json(
+      { error: "Login is unavailable right now. Please try again." },
+      { status: 500 },
+    );
+  }
+}
+
+async function login(request: Request) {
   const body = await request.json().catch(() => null);
   const parsedValues = loginSchema.safeParse(body);
   if (!parsedValues.success) {

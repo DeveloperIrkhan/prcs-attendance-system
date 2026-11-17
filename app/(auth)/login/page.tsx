@@ -22,7 +22,22 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { error?: string; redirectTo?: string } = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // A non-JSON body means the server crashed before the route could answer.
+        console.error(
+          "Login returned a non-JSON response",
+          res.status,
+          text.slice(0, 500),
+        );
+        setError(
+          `Login failed (server error ${res.status}). Check the deployment logs.`,
+        );
+        return;
+      }
       if (!res.ok) {
         setError(data.error ?? "Login failed");
         toast.error(data.error ?? "login fails!");

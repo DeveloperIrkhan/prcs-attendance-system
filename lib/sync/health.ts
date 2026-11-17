@@ -3,6 +3,8 @@
 // Pure functions, no database, safe to import from client components.
 
 export type SyncRow = {
+  /** Heartbeat id of the device this row belongs to, e.g. "device-223". */
+  deviceId?: string;
   lastSuccessAt: Date | string | null;
   lastAttemptAt: Date | string | null;
   lastError: string | null;

@@ -49,7 +49,8 @@ See `.env.example` for every variable. The important ones:
 - `SESSION_SECRET` – at least 32 characters; signs the session cookie. Rotating it signs everyone out.
 - `SEED_*` – the bootstrap Admin. `SEED_RESET_ADMIN_PASSWORD=true` overwrites the existing
   Admin password on the next seed, so leave it `false` outside deliberate resets.
-- `ZK_*` – device id/IP/port, poll interval and clock mode.
+- `ZK_*` – `ZK_DEVICES` (JSON list of `{id, ip, port, commKey}`) for one or more devices,
+  `ZK_DEVICE_*` for a single device, plus poll interval and clock mode.
 - `OFFICE_TIMEZONE` – timezone used for attendance dates and rules (default: server timezone).
 - `COOKIE_SECURE=false` – only for plain-HTTP deployments on an office LAN.
 - `ENABLE_HSTS=true` – only when the site is served over HTTPS.
@@ -77,7 +78,14 @@ See `.env.example` for every variable. The important ones:
 3. `npm start` on a process manager (PM2, Windows service, systemd…)
 4. Run the device poller as a **separate** long-lived process: `npm run sync`.
    `npm start` only serves the web app; without the poller no new punches arrive.
-5. Schedule `npm run backup` (for example nightly) and keep copies off the server.
+   The poller must run on a machine that can reach the devices on the office LAN
+   (ZKTeco pulls over TCP, default port 4370). It writes straight to `DATABASE_URL`,
+   so on Vercel or another host the web app and the office poller can share one Neon
+   database; the web host itself can never reach the devices.
+5. Multiple devices: set `ZK_DEVICES` to a JSON list. Every device gets its own heartbeat
+   row, and the dashboard shows the weakest one, so a single unreachable machine cannot
+   hide behind healthy ones.
+6. Schedule `npm run backup` (for example nightly) and keep copies off the server.
    NOC documents are stored as `bytea` in PostgreSQL, so a database backup is also their only backup.
 
 Changing or resetting a password bumps `User.sessionVersion`; every session issued with the old

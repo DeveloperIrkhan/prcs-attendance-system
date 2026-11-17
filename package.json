@@ -13,7 +13,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "test": "tsx lib/auth/leave-scope.check.mts && tsx lib/attendance/roster.check.mts && tsx lib/attendance/leave-sync.check.mts && tsx lib/attendance/daily-filters.check.mts && tsx lib/leave/approval-routing.check.mts && tsx lib/reports/salary-rows.check.mts && tsx lib/reports/columns.check.mts && tsx lib/noc/flow.check.mts && tsx lib/noc/file.check.mts",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && patch-package",
     "build": "prisma generate && next build"
   },
   "dependencies": {
@@ -51,6 +51,7 @@
     "concurrently": "^10.0.6",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "patch-package": "^8.0.1",
     "prisma": "^7.10.0",
     "prisma-markdown": "^4.0.0",
     "tailwindcss": "^4",

@@ -78,7 +78,8 @@ export function SyncHealthBadge(props: SyncHealthProps) {
     health.state === "never"
       ? "the sync has not reported yet"
       : `last sync ${describeAge(health.minutesSince)}`;
-  const title = `${SYNC_STATE_TEXT[health.state]} (${detail})${
+  const device = props.row?.deviceId ? ` [${props.row.deviceId}]` : "";
+  const title = `${SYNC_STATE_TEXT[health.state]}${device} (${detail})${
     health.lastError ? `. Last error: ${health.lastError}` : ""
   }`;
 
@@ -128,8 +129,11 @@ export function SyncHealthBanner(props: SyncHealthProps) {
       role="alert"
       className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800 sm:px-6"
     >
-      <strong>The attendance device sync has stopped.</strong> New punches are
-      not arriving, so today&apos;s attendance may be incomplete. Last
+      <strong>
+        The attendance device sync has stopped
+        {props.row?.deviceId ? ` on ${props.row.deviceId}` : ""}.
+      </strong>{" "}
+      New punches are not arriving, so today&apos;s attendance may be incomplete. Last
       successful sync: {describeAge(health.minutesSince)}.
       {health.lastError && <> Last error: {health.lastError}.</>} Check that the
       computer running the sync is on and connected to the device.

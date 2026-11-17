@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import type { ActionState } from "@/lib/action-state";
+import Spinner from "./Spinner";
 
 type Field = {
   name: string;
@@ -34,7 +35,7 @@ export default function SimpleForm({
     {} as ActionState,
   );
   const formRef = useRef<HTMLFormElement>(null);
-
+  // if (pending) return <Spinner />;
   useEffect(() => {
     if (state.ok && resetOnSuccess) formRef.current?.reset();
   }, [state, resetOnSuccess]);
@@ -50,6 +51,7 @@ export default function SimpleForm({
       {Object.entries(hidden ?? {}).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
+      {pending && <Spinner />}
       {fields.map((f) => (
         <div key={f.name} className="space-y-1">
           <label

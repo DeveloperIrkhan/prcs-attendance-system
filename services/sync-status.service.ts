@@ -1,7 +1,7 @@
 // The sync script's heartbeat. Used by the script (outside Next.js) and by the web app,
 // so: relative imports only, and no "server-only".
 import { prisma } from "../lib/prisma";
-import type { SyncRow } from "../lib/sync/health";
+import { evaluateSyncHealth, type SyncRow } from "../lib/sync/health";
 
 /** Called by the script after a full successful round (device read, punches saved, days processed). */
 export async function recordSyncSuccess(
@@ -59,18 +59,33 @@ export async function recordSyncFailure(
   });
 }
 
-/** The heartbeat of the most recently active device, as plain values (dates as ISO text). */
+/** The weakest device heartbeat: one unreachable machine must not hide behind three healthy ones. */
 export async function getSyncRow(): Promise<
-  (Omit<SyncRow, "lastSuccessAt" | "lastAttemptAt"> & {
+  (Omit<SyncRow, "lastSuccessAt" | "lastAttemptAt" | "deviceId"> & {
+    deviceId: string;
     lastSuccessAt: string | null;
     lastAttemptAt: string | null;
   }) | null
 > {
-  const row = await prisma.syncStatus.findFirst({
-    orderBy: { lastAttemptAt: "desc" },
-  });
-  if (!row) return null;
+  const rows = await prisma.syncStatus.findMany();
+  if (rows.length === 0) return null;
+
+  const now = Date.now();
+  const severity = { ok: 0, never: 1, delayed: 2, down: 3 } as const;
+  const ranked = rows
+    .map((row) => ({ row, health: evaluateSyncHealth(row, now) }))
+    .sort((a, b) => {
+      const byState = severity[b.health.state] - severity[a.health.state];
+      if (byState !== 0) return byState;
+      // Same state: report the device that has been silent the longest.
+      const at = a.health.lastSuccessAt?.getTime() ?? 0;
+      const bt = b.health.lastSuccessAt?.getTime() ?? 0;
+      return at - bt;
+    });
+
+  const row = ranked[0].row;
   return {
+    deviceId: row.id,
     lastSuccessAt: row.lastSuccessAt?.toISOString() ?? null,
     lastAttemptAt: row.lastAttemptAt?.toISOString() ?? null,
     lastError: row.lastError,

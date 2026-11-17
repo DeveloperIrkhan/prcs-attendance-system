@@ -31,7 +31,7 @@ export default async function DepartmentsPage() {
   return (
     <div className="w-full">
       <h1 className="text-xl font-semibold p-2 text-red-800">
-        IHRA Department
+        PRCS Department
       </h1>
       <div className="flex flex-col gap-3">
         <div className="flex justify-center w-full">
@@ -134,7 +134,12 @@ export default async function DepartmentsPage() {
         </section>
 
         <div className="overflow-x-auto rounded-md shadow-lg p-3 flex-1 bg-white">
-          <h2 className="mb-3 font-medium">Departments List</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="mb-3 font-medium">Departments List</h2>
+            <p className="text-sm">
+              {departments.length} departments found.
+            </p>
+          </div>
           <table className="w-full text-sm">
             <thead className="bg-red-800 text-white rounded-t-md text-left">
               <tr>

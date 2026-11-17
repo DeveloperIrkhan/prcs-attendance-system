@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import type { ActionState } from "@/lib/action-state";
+import Spinner from "./Spinner";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -37,6 +38,7 @@ export default function LeaveTypeForm({
   return (
     <form ref={formRef} onSubmit={onSubmit} className="space-y-3">
       {id && <input type="hidden" name="id" value={id} />}
+      {pending && <Spinner />}
       <div className="space-y-1">
         <label className="text-sm font-medium">Name</label>
         <input

@@ -25,7 +25,7 @@ export const emptyEmployee: EmployeeFormValues = {
   biometricId: "",
   name: "",
   email: "",
-  phoneNumber: "",
+  phoneNumber: "0123456789",
   joiningDate: "",
   departmentId: "",
   designationId: "",
@@ -74,16 +74,16 @@ export default function EmployeeForm({
         <CredentialsBox login={state.login} />
 
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              console.log("Add another employee clicked");
-              router.push("/employees/new");
-            }}
+          <Link href="/employees/new"
+            // type="button"
+            // onClick={() => {
+            //   console.log("Add another employee clicked");
+            //   router.push("/employees/new");
+            // }}
             className="green-button hoverEffect"
           >
             Add another employee
-          </button>
+          </Link>
 
           <Link href="/employees" className="green-button-inverse hoverEffect">
             Go to employees

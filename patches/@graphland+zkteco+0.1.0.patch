@@ -1,0 +1,37 @@
+diff --git a/node_modules/@graphland/zkteco/dist/transport/tcp.js b/node_modules/@graphland/zkteco/dist/transport/tcp.js
+index 31f5609..66cc842 100644
+--- a/node_modules/@graphland/zkteco/dist/transport/tcp.js
++++ b/node_modules/@graphland/zkteco/dist/transport/tcp.js
+@@ -192,6 +192,8 @@ export class TcpTransport {
+                             onProgress?.(replyData.length, size);
+                             if (totalPackets <= 0)
+                                 finish(replyData);
++                            else
++                                sendNextChunk();
+                         }
+                     }
+                 };
+@@ -199,14 +201,15 @@ export class TcpTransport {
+                     finish(replyData, new Error("Socket is disconnected unexpectedly"));
+                 });
+                 this.socket.on("data", onData);
+-                for (let i = 0; i <= numberChunks; i++) {
+-                    if (i === numberChunks) {
+-                        this.sendChunkRequest(numberChunks * MAX_CHUNK, remain);
+-                    }
+-                    else {
+-                        this.sendChunkRequest(i * MAX_CHUNK, MAX_CHUNK);
+-                    }
+-                }
++                let sentChunks = 0;
++                const sendNextChunk = () => {
++                    if (sentChunks > numberChunks) return;
++                    const offset = sentChunks * MAX_CHUNK;
++                    const length = sentChunks === numberChunks ? remain : MAX_CHUNK;
++                    sentChunks += 1;
++                    this.sendChunkRequest(offset, length);
++                };
++                sendNextChunk();
+             })
+                 .catch(reject);
+         });
