@@ -21,14 +21,11 @@ export type NavSection = { title: string; items: NavItem[] };
 
 const P = PERMISSIONS;
 
-/** Menu structure. Items the person has no permission for are removed. */
 export function buildNav(
   can: (...p: Permission[]) => boolean,
   opts: {
     isApprover?: boolean;
-    /** whose data the person may see: decides which attendance views the menu offers */
     scope?: DataScope;
-    /** the account is linked to an employee record */
     hasEmployee?: boolean;
   } = {},
 ): NavSection[] {
