@@ -38,7 +38,7 @@ export default function NocDecisionForm({ action, id, who }: Props) {
         name="decision"
         value="YES"
         disabled={pending}
-        className="rounded border border-green-800 bg-green-800 px-3 py-1 text-sm text-white hover:bg-white hover:text-green-800 disabled:opacity-50"
+        className="rounded border border-red-800 bg-red-800 px-3 py-1 text-sm text-white hover:bg-white hover:text-red-800 disabled:opacity-50"
       >
         Yes
       </button>

@@ -123,8 +123,8 @@ export default async function LeavesPage({
         </select>
         <button
           type="submit"
-          className="rounded-md bg-green-800 text-white hover:bg-white
-      hover:border hover:border-green-800 hover:text-green-800
+          className="rounded-md bg-red-800 text-white hover:bg-white
+      hover:border hover:border-red-800 hover:text-red-800
       px-4 py-2 text-sm disabled:opacity-50 hoverEffect"
         >
           Filter
@@ -133,7 +133,7 @@ export default async function LeavesPage({
 
       <ScrollTable>
         <table className="w-full min-w-max text-sm">
-          <thead className="sticky top-0 z-10 bg-green-800 text-white text-left">
+          <thead className="sticky top-0 z-10 bg-red-800 text-white text-left">
             <tr>
               <th className="p-3">Employee</th>
               <th className="p-3">Department</th>

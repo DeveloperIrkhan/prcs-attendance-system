@@ -25,7 +25,7 @@ export default async function EditEmployeePage({
   return (
     <div className="w-full h-2/3 flex justify-center items-center">
       <div className=" bg-white p-3 rounded-md shadow-lg">
-        <h1 className="text-xl font-semibold text-green-800">Edit employee</h1>
+        <h1 className="text-xl font-semibold text-red-800">Edit employee</h1>
         <EmployeeForm
           isEdit
           action={updateEmployeeAction}
@@ -47,7 +47,7 @@ export default async function EditEmployeePage({
           }}
         />
         <section className="mt-6 space-y-2 border-t pt-4">
-          <h2 className="font-semibold text-green-800">Login account</h2>
+          <h2 className="font-semibold text-red-800">Login account</h2>
           {employee.user ? (
             <p className="text-sm text-slate-600">
               Signs in with <span className="font-mono">{employee.email}</span>{" "}

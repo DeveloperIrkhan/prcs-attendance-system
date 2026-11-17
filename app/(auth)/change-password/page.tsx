@@ -79,7 +79,7 @@ export default function ChangePasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-green-700 hover:bg-green-800 hoverEffect py-2 text-white disabled:opacity-50"
+          className="w-full rounded bg-red-700 hover:bg-red-800 hoverEffect py-2 text-white disabled:opacity-50"
         >
           {loading ? "Saving..." : "Update password"}
         </button>

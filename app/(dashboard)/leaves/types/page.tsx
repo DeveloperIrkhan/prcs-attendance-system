@@ -30,7 +30,7 @@ export default async function LeaveTypesPage() {
       </div>
       <div className="overflow-x-auto rounded-md shadow-xl bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-green-800 text-white text-left">
+          <thead className="bg-red-800 text-white text-left">
             <tr>
               <th className="p-3">Name</th>
               <th className="p-3">Quota per year</th>
@@ -90,7 +90,7 @@ export default async function LeaveTypesPage() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-green-500">
+      <p className="text-xs text-red-500">
         Leave types are deactivated, not deleted, so past requests keep their
         history.
       </p>

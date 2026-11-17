@@ -117,7 +117,7 @@ export default async function EmployeesPage({
 
       <div className="overflow-x-auto bg-white rounded-md shadow-md p-4">
         <table className="w-full text-sm">
-          <thead className="bg-green-800 border-b border-green-800 text-white text-left">
+          <thead className="bg-red-800 border-b border-red-800 text-white text-left">
             <tr>
               <th className="p-3">Code</th>
               <th className="p-3">Name</th>

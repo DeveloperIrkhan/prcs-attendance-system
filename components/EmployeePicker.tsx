@@ -104,7 +104,7 @@ export default function EmployeePicker({
         <button
           type="button"
           onClick={selectShown}
-          className="rounded border border-green-800 px-3 py-2 text-sm text-green-800 hover:bg-green-50"
+          className="rounded border border-red-800 px-3 py-2 text-sm text-red-800 hover:bg-red-50"
         >
           Select shown ({shown.length})
         </button>
@@ -128,7 +128,7 @@ export default function EmployeePicker({
         )}
         {shown.map((e) => (
           <li key={e.id}>
-            <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-green-50">
+            <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-red-50">
               <input
                 type="checkbox"
                 checked={picked.has(e.id)}

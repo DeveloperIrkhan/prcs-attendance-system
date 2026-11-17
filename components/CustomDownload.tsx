@@ -75,7 +75,7 @@ export default function CustomDownload({ baseQuery, columns, storageKey }: Props
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="rounded-lg border border-green-800 px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-50"
+        className="rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-50"
       >
         Customized download
       </button>
@@ -92,7 +92,7 @@ export default function CustomDownload({ baseQuery, columns, storageKey }: Props
               <button
                 type="button"
                 onClick={() => setSelected(columns.map(() => true))}
-                className="text-green-800 hover:underline"
+                className="text-red-800 hover:underline"
               >
                 Select all
               </button>
@@ -109,7 +109,7 @@ export default function CustomDownload({ baseQuery, columns, storageKey }: Props
           <ul className="max-h-64 space-y-1 overflow-auto rounded border border-zinc-200 p-2 text-sm">
             {columns.map((label, i) => (
               <li key={`${i}-${label}`}>
-                <label className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-green-50">
+                <label className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-red-50">
                   <input
                     type="checkbox"
                     checked={selected[i] ?? false}

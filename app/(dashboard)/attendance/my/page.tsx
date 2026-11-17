@@ -90,7 +90,7 @@ export default async function MyAttendancePage({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-green-800">
+          <h1 className="text-xl font-semibold text-red-800">
             My attendance
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -145,7 +145,7 @@ export default async function MyAttendancePage({
                 aria-current={active ? "true" : undefined}
                 className={`rounded-full border px-3 py-1 text-xs ${
                   active
-                    ? "border-green-800 bg-green-800 text-white"
+                    ? "border-red-800 bg-red-800 text-white"
                     : "border-slate-200 text-slate-600 hover:bg-slate-100"
                 }`}
               >
@@ -201,7 +201,7 @@ export default async function MyAttendancePage({
                   <tr
                     key={d.iso}
                     className={`border-t border-slate-100 ${
-                      d.iso === selectedIso && isMonth ? "bg-green-50" : ""
+                      d.iso === selectedIso && isMonth ? "bg-red-50" : ""
                     } ${quiet ? "text-slate-500" : ""}`}
                   >
                     <td className="whitespace-nowrap px-5 py-3">
@@ -249,7 +249,7 @@ export default async function MyAttendancePage({
       <p className="text-sm text-slate-500">
         <Link
           href={`/dashboard${withStatus(pillQuery, "ALL")}`}
-          className="font-medium text-green-700 hover:underline"
+          className="font-medium text-red-700 hover:underline"
         >
           Back to my dashboard
         </Link>

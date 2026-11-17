@@ -62,7 +62,7 @@ export default function NocUploadForm({ id, label }: Props) {
       <button
         type="submit"
         disabled={busy}
-        className="rounded border border-green-800 bg-green-800 px-3 py-1 text-xs text-white hover:bg-white hover:text-green-800 disabled:opacity-50"
+        className="rounded border border-red-800 bg-red-800 px-3 py-1 text-xs text-white hover:bg-white hover:text-red-800 disabled:opacity-50"
       >
         {busy ? "Uploading..." : label}
       </button>

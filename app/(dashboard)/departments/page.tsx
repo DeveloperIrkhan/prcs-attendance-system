@@ -30,7 +30,7 @@ export default async function DepartmentsPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-xl font-semibold p-2 text-green-800">
+      <h1 className="text-xl font-semibold p-2 text-red-800">
         IHRA Department
       </h1>
       <div className="flex flex-col gap-3">
@@ -136,7 +136,7 @@ export default async function DepartmentsPage() {
         <div className="overflow-x-auto rounded-md shadow-lg p-3 flex-1 bg-white">
           <h2 className="mb-3 font-medium">Departments List</h2>
           <table className="w-full text-sm">
-            <thead className="bg-green-800 text-white rounded-t-md text-left">
+            <thead className="bg-red-800 text-white rounded-t-md text-left">
               <tr>
                 <th className="p-3">Name</th>
                 <th className="p-3">Description</th>

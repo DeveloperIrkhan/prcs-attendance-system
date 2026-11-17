@@ -23,7 +23,7 @@ export default async function CorrectAttendancePage({
   return (
     <div className="w-screen flex justify-center items-center">
       <div className="space-y-4">
-        <h1 className="text-xl text-green-800 font-semibold">
+        <h1 className="text-xl text-red-800 font-semibold">
           Correct attendance
         </h1>
 

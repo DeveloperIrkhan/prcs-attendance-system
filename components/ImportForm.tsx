@@ -91,7 +91,7 @@ export default function ImportForm({
           </div>
         </div>
 
-        <div className="w-full border p-4 border-dashed border-green-800 rounded-md h-1/2">
+        <div className="w-full border p-4 border-dashed border-red-800 rounded-md h-1/2">
           <label className="text-sm font-medium">
             Attendance file (.xlsx or .xls, max 10 MB)
           </label>
@@ -112,7 +112,7 @@ export default function ImportForm({
         <button
           type="submit"
           disabled={loading}
-          className="rounded bg-green-600 hover:bg-green-800 duration-300 px-4 py-2 text-sm text-white disabled:opacity-50"
+          className="rounded bg-red-600 hover:bg-red-800 duration-300 px-4 py-2 text-sm text-white disabled:opacity-50"
         >
           {loading ? "Importing..." : "Upload and import"}
         </button>

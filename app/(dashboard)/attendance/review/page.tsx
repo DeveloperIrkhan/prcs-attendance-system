@@ -35,7 +35,7 @@ export default async function MissingPunchesPage({
           </span>
         )}
       </h1>
-      <p className="max-w-2xl text-sm text-green-600">
+      <p className="max-w-2xl text-sm text-red-600">
         These days have only one punch. They count as absent until corrected.
         Open a day, enter the real times (or mark the employee absent) and give
         a reason.
@@ -53,7 +53,7 @@ export default async function MissingPunchesPage({
         />
         <button
           type="submit"
-          className="rounded-md border px-3 py-1 bg-green-800 text-white hoverEffect hover:text-green-800 hover:bg-white"
+          className="rounded-md border px-3 py-1 bg-red-800 text-white hoverEffect hover:text-red-800 hover:bg-white"
         >
           Filter
         </button>
@@ -73,7 +73,7 @@ export default async function MissingPunchesPage({
 
       <ScrollTable>
         <table className="w-full min-w-max text-sm">
-          <thead className="sticky top-0 z-10 bg-green-800 text-white text-left">
+          <thead className="sticky top-0 z-10 bg-red-800 text-white text-left">
             <tr>
               <th className="p-3">Date</th>
               <th className="p-3">Code</th>

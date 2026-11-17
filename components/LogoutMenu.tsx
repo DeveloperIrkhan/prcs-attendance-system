@@ -49,7 +49,7 @@ const LogoutMenu = ({ user }: IUser) => {
         onClick={() => setOpen((v) => !v)}
         className="rounded-full p-2 flex justify-center cursor-pointer items-center gap-x-4 hoverEffect"
       >
-        <div className="bg-green-800 text-white border border-green-800 group-hover:text-green-800 duration-300 group-hover:bg-white group-hover:border-green-800 w-9 h-9 rounded-full flex items-center justify-center text-md font-bold uppercase">
+        <div className="bg-red-800 text-white border border-red-800 group-hover:text-red-800 duration-300 group-hover:bg-white group-hover:border-red-800 w-9 h-9 rounded-full flex items-center justify-center text-md font-bold uppercase">
           {user.fullName?.charAt(0)}
         </div>
 
@@ -69,7 +69,7 @@ const LogoutMenu = ({ user }: IUser) => {
             <Link
               href="/"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
               <User className="w-4 h-4" /> My Profile
             </Link>
@@ -77,7 +77,7 @@ const LogoutMenu = ({ user }: IUser) => {
             <Link
               href="/change-password"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
               <KeyRound className="w-4 h-4" /> Change Password
             </Link>
@@ -87,21 +87,21 @@ const LogoutMenu = ({ user }: IUser) => {
                 <Link
                   href="/dashboard/users/pending-approvals"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4" /> Pending Approvals
                 </Link>
                 <Link
                   href="/dashboard/users/view-all"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4" /> All Users
                 </Link>
                 <Link
                   href="/dashboard/roles/view-all"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4" /> Manage Roles
                 </Link>
@@ -113,7 +113,7 @@ const LogoutMenu = ({ user }: IUser) => {
                 setOpen(false);
                 logout();
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-green-50 transition-colors border-t border-slate-100"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-slate-100"
             >
               <LogOut className="w-4 h-4" /> Logout
             </button>

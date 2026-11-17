@@ -65,7 +65,7 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-green-800">Reports</h1>
+      <h1 className="text-xl font-semibold text-red-800">Reports</h1>
 
       <nav className="flex flex-wrap gap-2" aria-label="Report type">
         {REPORT_TYPE.map((t) => (
@@ -74,8 +74,8 @@ export default async function ReportsPage({
             href={`/reports?type=${t.value}`}
             className={`rounded-md border px-3 py-1.5 text-sm ${
               t.value === params.type
-                ? "border-green-800 bg-green-800 text-white"
-                : "border-green-800 text-green-800 hover:bg-green-50"
+                ? "border-red-800 bg-red-800 text-white"
+                : "border-red-800 text-red-800 hover:bg-red-50"
             }`}
           >
             {t.label}
@@ -265,7 +265,7 @@ export default async function ReportsPage({
 
           <ScrollTable>
             <table className="w-full min-w-max text-sm">
-              <thead className="sticky top-0 z-10 bg-green-800 text-white">
+              <thead className="sticky top-0 z-10 bg-red-800 text-white">
                 <tr>
                   {table.column.map((c) => (
                     <th
@@ -299,7 +299,7 @@ export default async function ReportsPage({
                     key={i}
                     className={
                       subtotal.has(i)
-                        ? "border-t border-green-100 bg-green-50 font-semibold"
+                        ? "border-t border-red-100 bg-red-50 font-semibold"
                         : row.includes("Weekly off")
                           ? "border-t bg-gray-100"
                           : row.includes("On leave")
@@ -330,7 +330,7 @@ export default async function ReportsPage({
                   </tr>
                 ))}
                 {table.totals && (
-                  <tr className="border-t-2 border-green-800 bg-green-50 font-semibold">
+                  <tr className="border-t-2 border-red-800 bg-red-50 font-semibold">
                     {table.totals.map((cell, j) => (
                       <td
                         key={j}

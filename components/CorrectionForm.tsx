@@ -71,7 +71,7 @@ export default function CorrectionForm({ action, id, initialIn, initialOut }: Pr
 
       <div className="flex gap-3">
         <button type="submit" disabled={pending} 
-        className="custom-button border border-green-800 bg-green-800 text-white hover:text-green-800 hover:bg-white  px-4 py-2 text-sm text-white disabled:opacity-50">
+        className="custom-button border border-red-800 bg-red-800 text-white hover:text-red-800 hover:bg-white  px-4 py-2 text-sm text-white disabled:opacity-50">
           {pending ? "Saving..." : "Save correction"}
         </button>
         <Link href="/attendance/review" className="rounded border px-4 py-2 text-sm hover:bg-zinc-100">

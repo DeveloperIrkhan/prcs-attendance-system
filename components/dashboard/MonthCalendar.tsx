@@ -83,7 +83,7 @@ export default function MonthCalendar({
               aria-current={selected ? "date" : undefined}
               className={`mx-auto flex h-9 w-9 flex-col items-center justify-center rounded-full text-sm tabular-nums ${
                 selected
-                  ? "bg-green-800 font-semibold text-white"
+                  ? "bg-red-800 font-semibold text-white"
                   : muted
                     ? "text-slate-400 hover:bg-slate-100"
                     : "text-slate-700 hover:bg-slate-100"

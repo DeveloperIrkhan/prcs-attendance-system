@@ -23,8 +23,8 @@ export default function LeaveTabs({
           href={t.href}
           className={`rounded px-3 py-1 ${
             t.href === active
-              ? "border hoverEffect border-green-800 bg-green-800 text-white"
-              : "border hoverEffect border-green-800 hover:bg-green-800 text-green-800 hover:text-white"
+              ? "border hoverEffect border-red-800 bg-red-800 text-white"
+              : "border hoverEffect border-red-800 hover:bg-red-800 text-red-800 hover:text-white"
           }`}
         >
           {t.label}

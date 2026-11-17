@@ -36,7 +36,7 @@ export default async function MyNocPage() {
 
       <div className="overflow-x-auto rounded-md bg-white p-2 shadow-lg">
         <table className="w-full text-sm">
-          <thead className="bg-green-800 text-left text-white">
+          <thead className="bg-red-800 text-left text-white">
             <tr>
               <th className="p-3">Applied</th>
               <th className="p-3">For</th>
@@ -98,7 +98,7 @@ export default async function MyNocPage() {
                   {r.status === "ISSUED" && r.document && (
                     <a
                       href={`/api/noc/${r.id}/document`}
-                      className="inline-block rounded border border-green-800 px-3 py-1 text-xs text-green-800 hover:bg-green-800 hover:text-white"
+                      className="inline-block rounded border border-red-800 px-3 py-1 text-xs text-red-800 hover:bg-red-800 hover:text-white"
                     >
                       Download NOC
                     </a>

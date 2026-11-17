@@ -43,7 +43,7 @@ export default async function LeaveApprovalsPage() {
 
       <ScrollTable>
         <table className="w-full min-w-max text-sm">
-          <thead className="sticky top-0 z-10 bg-green-800 text-left text-white">
+          <thead className="sticky top-0 z-10 bg-red-800 text-left text-white">
             <tr>
               <th className="p-3">Employee</th>
               <th className="p-3">Department</th>

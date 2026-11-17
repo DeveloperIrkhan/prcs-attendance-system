@@ -35,7 +35,7 @@ type SearchParams = Promise<{
 
 const BASE = "/attendance/daily";
 const navButton =
-  "rounded border border-green-800 bg-green-800 text-white px-3 py-1 hover:bg-white hover:text-green-800 hoverEffect";
+  "rounded border border-red-800 bg-red-800 text-white px-3 py-1 hover:bg-white hover:text-red-800 hoverEffect";
 
 export default async function DailyAttendancePage({
   searchParams,
@@ -259,8 +259,8 @@ export default async function DailyAttendancePage({
           aria-current={status === "ALL" ? "true" : undefined}
           className={`rounded px-3 py-1 ${
             status === "ALL"
-              ? "bg-green-800 text-white"
-              : "bg-white hover:bg-green-50"
+              ? "bg-red-800 text-white"
+              : "bg-white hover:bg-red-50"
           }`}
         >
           All <span className="tabular-nums">({all})</span>
@@ -271,8 +271,8 @@ export default async function DailyAttendancePage({
             href={href({ status: s as typeof status })}
             aria-current={status === s ? "true" : undefined}
             className={`flex items-center gap-2 rounded px-3 py-1 ${
-              status === s ? "ring-2 ring-green-800" : ""
-            } bg-white hover:bg-green-50`}
+              status === s ? "ring-2 ring-red-800" : ""
+            } bg-white hover:bg-red-50`}
           >
             <AttendanceStatusBadge status={s} />
             <span className="tabular-nums">{counts[s] ?? 0}</span>
@@ -296,7 +296,7 @@ export default async function DailyAttendancePage({
 
       <div className="overflow-x-auto rounded-md p-2 shadow-lg bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-green-800 text-white text-left">
+          <thead className="bg-red-800 text-white text-left">
             <tr>
               <th className="p-3">Serial No</th>
               {multiDay && <th className="p-3">Date</th>}
@@ -379,7 +379,7 @@ export default async function DailyAttendancePage({
                   {canEdit && r.recordId && (
                     <Link
                       href={`/attendance/records/${r.recordId}/edit`}
-                      className="mt-1 inline-block rounded border border-green-800 bg-white px-2 py-1 text-xs text-green-800 hoverEffect hover:bg-green-800 hover:text-white"
+                      className="mt-1 inline-block rounded border border-red-800 bg-white px-2 py-1 text-xs text-red-800 hoverEffect hover:bg-red-800 hover:text-white"
                     >
                       Edit
                     </Link>

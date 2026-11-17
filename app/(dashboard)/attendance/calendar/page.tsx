@@ -67,16 +67,16 @@ export default async function CalendarPage({
           <div className="space-x-2 text-sm">
             <Link
               href={`/attendance/calendar?year=${prev.y}&month=${prev.m}`}
-              className="rounded border border-green-900 text-green-900 
-              hover:bg-green-900 hover:text-white px-3 py-1 
+              className="rounded border border-red-900 text-red-900 
+              hover:bg-red-900 hover:text-white px-3 py-1 
               hoverEffect"
             >
               Previous
             </Link>
             <Link
               href={`/attendance/calendar?year=${next.y}&month=${next.m}`}
-              className="rounded border border-green-900 text-green-900 
-              hover:bg-green-900 hover:text-white px-3 py-1 
+              className="rounded border border-red-900 text-red-900 
+              hover:bg-red-900 hover:text-white px-3 py-1 
               hoverEffect"
             >
               Next

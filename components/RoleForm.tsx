@@ -84,7 +84,7 @@ export default function RoleForm({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {PERMISSION_GROUPS.map((group) => (
           <fieldset key={group.title} className="space-y-2 rounded-md border p-3">
-            <legend className="px-1 text-sm font-semibold text-green-800">
+            <legend className="px-1 text-sm font-semibold text-red-800">
               {group.title}
             </legend>
             {group.items.map((p) => (

@@ -28,7 +28,7 @@ export default async function DesignationsPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-xl font-semibold p-2 text-green-800">Designations</h1>
+      <h1 className="text-xl font-semibold p-2 text-red-800">Designations</h1>
       <div className="flex flex-col justify-center items-start gap-3">
         <div className="flex w-full justify-center">
           <section className="flex items-center justify-center rounded-md bg-white p-4 shadow-lg w-full md:max-w-md">
@@ -55,7 +55,7 @@ export default async function DesignationsPage() {
         <div className="overflow-x-auto w-full rounded-md shadow-lg p-3 flex-1 bg-white">
           <h2 className="mb-3 font-medium">Designations List</h2>
           <table className="w-full text-sm">
-            <thead className="bg-green-800 text-white text-left">
+            <thead className="bg-red-800 text-white text-left">
               <tr>
                 <th className="p-3">Title</th>
                 <th className="p-3">Approval level</th>

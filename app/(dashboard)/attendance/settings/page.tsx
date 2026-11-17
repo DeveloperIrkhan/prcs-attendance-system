@@ -14,20 +14,20 @@ export default async function AttendanceSettingsPage() {
   return (
     <div className="w-full flex justify-center items-center">
       <div className="space-y-4">
-        <h1 className="text-2xl text-green-800 font-semibold">
+        <h1 className="text-2xl text-red-800 font-semibold">
           Attendance rules
         </h1>
-        <p className="max-w-3xl text-sm text-green-600">
+        <p className="max-w-3xl text-sm text-red-600">
           These rules are used when attendance is processed. Changing them does
           not alter existing records until you click &quot;Process
           attendance&quot; on an import batch. Days that HR corrected by hand
           are never overwritten.
         </p>
-        <div className="p-4 bg-green-100 rounded-md shadow-xl">
-          <h2 className="text-lg font-semibold text-green-800">
+        <div className="p-4 bg-red-100 rounded-md shadow-xl">
+          <h2 className="text-lg font-semibold text-red-800">
             Current Settings
           </h2>
-          <ul className="list-disc list-inside text-sm text-green-600">
+          <ul className="list-disc list-inside text-sm text-red-600">
             <li>
               Office Starting Time:{" "}
               <span className="font-semibold ml-2">

@@ -55,7 +55,7 @@ export default async function LeaveBalancesPage({
 
       <ScrollTable>
         <table className="w-full min-w-max form-style shadow-lg text-sm">
-          <thead className="sticky top-0 z-10 bg-green-800 text-white text-left">
+          <thead className="sticky top-0 z-10 bg-red-800 text-white text-left">
             <tr>
               <th className="p-3">Code</th>
               <th className="p-3">Employee</th>

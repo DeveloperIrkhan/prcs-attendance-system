@@ -20,7 +20,7 @@ export default async function UsersPage() {
 
   return (
     <div className="w-full space-y-3">
-      <h1 className="p-2 text-xl font-semibold text-green-800">Users</h1>
+      <h1 className="p-2 text-xl font-semibold text-red-800">Users</h1>
       <p className="px-2 text-sm text-zinc-600">
         Employees get a login automatically (Employee role) when they are added
         on the Employees page. Use <b>Create user</b> below for staff who are
@@ -38,7 +38,7 @@ export default async function UsersPage() {
 
       <div className="w-full overflow-x-auto rounded-md bg-white p-3 shadow-lg">
         <table className="w-full text-sm">
-          <thead className="bg-green-800 text-left text-white">
+          <thead className="bg-red-800 text-left text-white">
             <tr>
               <th className="p-3">Name</th>
               <th className="p-3">Role</th>

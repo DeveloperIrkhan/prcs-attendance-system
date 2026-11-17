@@ -104,7 +104,7 @@ export default async function MyLeavesPage({
                 </span>
                 <Link
                   href={`/leaves/request?again=${r.id}`}
-                  className="rounded bg-green-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+                  className="rounded bg-red-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
                 >
                   Request Again
                 </Link>

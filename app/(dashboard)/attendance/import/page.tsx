@@ -12,8 +12,8 @@ export default async function ImportPage() {
   return (
     <div className="w-full md:h-2/3 h-full flex justify-center items-center">
       <div className="">
-        <h1 className="text-xl font-semibold text-green-800">Import attendance</h1>
-        <p className="max-w-2xl text-sm text-green-600 mb-4">
+        <h1 className="text-xl font-semibold text-red-800">Import attendance</h1>
+        <p className="max-w-2xl text-sm text-red-600 mb-4">
           Upload the raw monthly sheet from the biometric machine. Each
           employee&apos;s Biometric ID (AC-No.) must match the Biometric ID
           saved under Employees.

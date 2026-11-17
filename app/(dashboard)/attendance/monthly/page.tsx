@@ -65,13 +65,13 @@ export default async function MonthlySummaryPage({
         <div className="space-x-2 text-sm">
           <Link
             href={link(prev.y, prev.m)}
-            className="rounded-md border px-3 py-1 bg-green-800 text-white hoverEffect hover:text-green-800 hover:bg-white"
+            className="rounded-md border px-3 py-1 bg-red-800 text-white hoverEffect hover:text-red-800 hover:bg-white"
           >
             Previous month
           </Link>
           <Link
             href={link(next.y, next.m)}
-            className="rounded-md border px-3 py-1 bg-green-800 text-white hoverEffect hover:text-green-800 hover:bg-white"
+            className="rounded-md border px-3 py-1 bg-red-800 text-white hoverEffect hover:text-red-800 hover:bg-white"
           >
             Next month
           </Link>
@@ -108,14 +108,14 @@ export default async function MonthlySummaryPage({
         )}
         <button
           type="submit"
-          className="rounded-md border px-3 py-1 bg-green-800 text-white hoverEffect hover:text-green-800 hover:bg-white"
+          className="rounded-md border px-3 py-1 bg-red-800 text-white hoverEffect hover:text-red-800 hover:bg-white"
         >
           Show
         </button>
       </form>
 
       {totals.missingPunch > 0 && (
-        <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+        <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-900">
           {totals.missingPunch} day(s) still have a missing punch and count as
           absent until HR corrects them.{" "}
           {canReview && (
@@ -131,7 +131,7 @@ export default async function MonthlySummaryPage({
 
       <ScrollTable>
         <table className="w-full min-w-max text-sm shadow-md rounded-md p-2">
-          <thead className="sticky top-0 z-10 bg-green-800 text-white text-left">
+          <thead className="sticky top-0 z-10 bg-red-800 text-white text-left">
             <tr>
               <th className="p-3">Code</th>
               <th className="p-3">Name</th>
@@ -198,7 +198,7 @@ export default async function MonthlySummaryPage({
             ))}
           </tbody>
           {rows.length > 0 && (
-            <tfoot className="sticky bottom-0 bg-green-100 font-medium">
+            <tfoot className="sticky bottom-0 bg-red-100 font-medium">
               <tr>
                 <td className="p-3" colSpan={3}>
                   Total

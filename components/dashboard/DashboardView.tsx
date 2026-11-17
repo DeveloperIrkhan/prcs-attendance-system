@@ -249,11 +249,11 @@ export default function DashboardView({
       <div className="space-y-6 pb-3">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-green-800 tracking-tight">
+            <h1 className="text-2xl font-semibold text-red-800 tracking-tight">
               {greeting}, {firstName}
             </h1>
             {scopeLabel && (
-              <p className="mt-1 text-sm font-medium text-green-800">
+              <p className="mt-1 text-sm font-medium text-red-800">
                 {scopeLabel}
               </p>
             )}
@@ -265,7 +265,7 @@ export default function DashboardView({
             {!isMonth && (
               <p className="mt-1 text-sm text-slate-500">
                 Charts and totals below cover{" "}
-                <span className="font-medium text-green-800">{monthLabel}</span>
+                <span className="font-medium text-red-800">{monthLabel}</span>
                 .
               </p>
             )}
@@ -517,7 +517,7 @@ export default function DashboardView({
               </div>
               <Link
                 href={`/attendance/daily?date=${iso}`}
-                className="text-sm font-medium text-green-700 hover:underline"
+                className="text-sm font-medium text-red-700 hover:underline"
               >
                 View all
               </Link>
@@ -579,7 +579,7 @@ export default function DashboardView({
                         href={a.href}
                         className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm ${
                           i === 0
-                            ? "border-green-600 bg-green-800 text-white hover:bg-green-700"
+                            ? "border-red-600 bg-red-800 text-white hover:bg-red-700"
                             : "border-slate-200 hover:bg-slate-50"
                         }`}
                       >
@@ -587,7 +587,7 @@ export default function DashboardView({
                         <span>
                           <span className="block font-medium">{a.label}</span>
                           <span
-                            className={`block text-xs ${i === 0 ? "text-green-100" : "text-slate-500"}`}
+                            className={`block text-xs ${i === 0 ? "text-red-100" : "text-slate-500"}`}
                           >
                             {a.hint}
                           </span>
@@ -601,7 +601,7 @@ export default function DashboardView({
 
             <div
               id="attention"
-              className={`${card} bg-green-800! text-white! scroll-mt-24 p-5`}
+              className={`${card} bg-red-800! text-white! scroll-mt-24 p-5`}
             >
               <h2 className={`${cardTitle} mb-3`}>Needs attention</h2>
               {attention.length === 0 ? (
@@ -615,9 +615,9 @@ export default function DashboardView({
                     <li key={a.text}>
                       <Link
                         href={a.href}
-                        className="flex items-start gap-3 rounded-lg p-2 text-sm hover:bg-green-700 duration-300"
+                        className="flex items-start gap-3 rounded-lg p-2 text-sm hover:bg-red-700 duration-300"
                       >
-                        <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-white px-1.5 text-xs font-semibold tabular-nums text-green-800">
+                        <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-white px-1.5 text-xs font-semibold tabular-nums text-red-800">
                           {a.count}
                         </span>
                         <span className="pt-0.5 text-white">{a.text}</span>
@@ -638,7 +638,7 @@ export default function DashboardView({
                 <h2 className={cardTitle}>Recent leave requests</h2>
                 <Link
                   href="/leaves"
-                  className="text-sm font-medium text-green-700 hover:underline"
+                  className="text-sm font-medium text-red-700 hover:underline"
                 >
                   View all
                 </Link>

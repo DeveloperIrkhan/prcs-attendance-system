@@ -166,7 +166,7 @@ export default function DailyFilters({
 
       <button
         type="submit"
-        className="rounded border border-green-800 bg-green-800 px-4 py-2 text-sm text-white hoverEffect hover:bg-white hover:text-green-800"
+        className="rounded border border-red-800 bg-red-800 px-4 py-2 text-sm text-white hoverEffect hover:bg-white hover:text-red-800"
       >
         Show Result
       </button>

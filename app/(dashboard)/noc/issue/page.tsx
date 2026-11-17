@@ -54,7 +54,7 @@ export default async function IssueNocPage({
             href={`/noc/issue?status=${f.value}`}
             aria-current={filter === f.value ? "true" : undefined}
             className={`rounded px-3 py-1 ${
-              filter === f.value ? "bg-green-800 text-white" : "bg-white hover:bg-green-50"
+              filter === f.value ? "bg-red-800 text-white" : "bg-white hover:bg-red-50"
             }`}
           >
             {f.label}
@@ -64,7 +64,7 @@ export default async function IssueNocPage({
 
       <div className="overflow-x-auto rounded-md bg-white p-2 shadow-lg">
         <table className="w-full text-sm">
-          <thead className="bg-green-800 text-left text-white">
+          <thead className="bg-red-800 text-left text-white">
             <tr>
               <th className="p-3">Applied</th>
               <th className="p-3">Employee</th>
@@ -120,7 +120,7 @@ export default async function IssueNocPage({
                     <div className="space-y-2">
                       <a
                         href={`/api/noc/${r.id}/document`}
-                        className="text-green-800 underline"
+                        className="text-red-800 underline"
                       >
                         {r.document.fileName}
                       </a>

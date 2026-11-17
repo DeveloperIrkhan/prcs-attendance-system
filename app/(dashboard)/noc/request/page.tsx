@@ -21,7 +21,7 @@ export default async function NocRequestPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Apply for NOC</h1>
-        <Link href="/noc/my" className="text-sm text-green-800 underline">
+        <Link href="/noc/my" className="text-sm text-red-800 underline">
           My NOC requests
         </Link>
       </div>

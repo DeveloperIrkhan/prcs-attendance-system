@@ -32,7 +32,7 @@ export default async function MyLeavesPage() {
 
       <ScrollTable>
         <table className="w-full min-w-max text-sm">
-          <thead className="sticky top-0 z-10 bg-green-800 text-left text-white">
+          <thead className="sticky top-0 z-10 bg-red-800 text-left text-white">
             <tr>
               <th className="p-3">Type</th>
               <th className="p-3">From</th>
@@ -74,7 +74,7 @@ export default async function MyLeavesPage() {
                   {leave.status === "REJECTED" && (
                     <Link
                       href={`/leaves/request?again=${leave.id}`}
-                      className="rounded bg-green-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+                      className="rounded bg-red-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
                     >
                       Request Again
                     </Link>

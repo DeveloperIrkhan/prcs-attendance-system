@@ -71,7 +71,7 @@ input {
 
 @layer components {
   .custom-button {
-    @apply bg-green-500 w-full py-2 text-lg rounded-md text-white hover:bg-green-700 duration-400 hover:shadow-[0_0_10px_rgba(0,0,0,0.3)];
+    @apply bg-red-500 w-full py-2 text-lg rounded-md text-white hover:bg-red-700 duration-400 hover:shadow-[0_0_10px_rgba(0,0,0,0.3)];
   }
 
   .transparent-button {
@@ -104,7 +104,7 @@ input {
       px-4 py-2 text-sm disabled:opacity-50;
   }
   .bordering {
-    @apply border border-red-600 hover:border-green-800 duration-300 transition-colors;
+    @apply border border-red-600 hover:border-red-800 duration-300 transition-colors;
   }
   .form-style {
     @apply shadow-lg rounded-lg;

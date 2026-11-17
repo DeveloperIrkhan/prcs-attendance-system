@@ -168,13 +168,13 @@ export default function MyDashboard({
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-wide text-green-800">
+          <h1 className="text-2xl font-semibold tracking-wide text-red-800">
             <span className="text-black!">{greetingNow()},</span>{" "}
             <span className="capitalize">{fullName}</span>
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Your personal attendance for{" "}
-            <span className="tracking-wider text-green-800">{monthLabel}</span>
+            <span className="tracking-wider text-red-800">{monthLabel}</span>
           </p>
           <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
             <span>
@@ -268,7 +268,7 @@ export default function MyDashboard({
             </div>
             <Link
               href={`/attendance/my${withStatus(periodQuery(period), status)}`}
-              className="text-sm font-medium text-green-700 hover:underline"
+              className="text-sm font-medium text-red-700 hover:underline"
             >
               Open full table
             </Link>
@@ -507,7 +507,7 @@ export default function MyDashboard({
           </div>
           <Link
             href="/leaves/my"
-            className="text-sm font-medium text-green-700 hover:underline"
+            className="text-sm font-medium text-red-700 hover:underline"
           >
             View all
           </Link>
@@ -521,7 +521,7 @@ export default function MyDashboard({
             </p>
             <Link
               href="/leaves/request"
-              className="mt-3 inline-block text-sm font-medium text-green-700 hover:underline"
+              className="mt-3 inline-block text-sm font-medium text-red-700 hover:underline"
             >
               Request leave
             </Link>

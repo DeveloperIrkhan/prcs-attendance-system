@@ -17,7 +17,7 @@ export default async function RolesPage() {
   return (
     <div className="w-full space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-green-800">Roles</h1>
+        <h1 className="text-xl font-semibold text-red-800">Roles</h1>
         <p className="max-w-3xl text-sm text-zinc-600">
           A role is a set of rights. Give a login a role on the Users page and it
           gets exactly these rights, and no more. Changes apply straight away.
@@ -39,7 +39,7 @@ export default async function RolesPage() {
 
       <ScrollTable>
         <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-green-800 text-left text-white">
+          <thead className="sticky top-0 z-10 bg-red-800 text-left text-white">
             <tr>
               <th className="p-3">Role</th>
               <th className="p-3">Users</th>
