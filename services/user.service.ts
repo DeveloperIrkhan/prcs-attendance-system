@@ -212,6 +212,8 @@ export async function resetUserPassword(
       mustChangePassword: true,
       failedLoginAttempts: 0,
       lockedUntil: null,
+      // Invalidate any session that is still signed in with the old password.
+      sessionVersion: { increment: 1 },
     },
   });
   return { name: user.fullName, email: user.email, password };

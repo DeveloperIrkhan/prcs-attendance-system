@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { hasPermission, requireScope } from "@/lib/auth/authorization";
-import { requirePermission } from "@/lib/auth/authorization";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { formatMinutes } from "@/lib/attendance/attendance-rules";
 import { MONTHS } from "@/lib/attendance/months";

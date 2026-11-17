@@ -123,6 +123,7 @@ export function buildNav(
             icon: "leaves",
             show: can(P.LEAVES_MANAGE),
           },
+          
           {
             href: "/attendance/my",
             label: "My Attendance",

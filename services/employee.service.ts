@@ -277,6 +277,8 @@ export async function resetEmployeeLogin(
         mustChangePassword: true,
         failedLoginAttempts: 0,
         lockedUntil: null,
+        // Invalidate any session that is still signed in with the old password.
+        sessionVersion: { increment: 1 },
       },
     });
   } else {

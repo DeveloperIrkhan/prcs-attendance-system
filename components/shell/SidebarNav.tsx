@@ -61,7 +61,7 @@ export default function SidebarNav({
                 aria-current={isActive(item.href) ? "page" : undefined}
                 className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-sm ${
                   isActive(item.href)
-                    ? "bg-green-800 text-white"
+                    ? "bg-red-800 text-white"
                     : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
@@ -92,7 +92,7 @@ export default function SidebarNav({
                     aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-emerald-400 ${
                       active
-                        ? "bg-green-800 text-white"
+                        ? "bg-red-800 text-white"
                         : "text-slate-300 hover:bg-slate-800 hover:text-white"
                     }`}
                   >

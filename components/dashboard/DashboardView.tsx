@@ -13,7 +13,6 @@ import {
   type LucideIcon,
   FingerprintPattern,
   TriangleAlert,
-  FileQuestionMark,
   LucideFileQuestionMark,
 } from "lucide-react";
 import BarChart from "@/components/charts/BarChart";

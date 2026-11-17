@@ -2,7 +2,6 @@
 import assert from "node:assert/strict";
 import { planLeaveSync, LEAVE_REMARK, type ExistingRow } from "./leave-sync.ts";
 
-const D = 86_400_000;
 const day = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
 // Mon 2026-10-26 .. Sun 2026-11-01 ; Saturday 31 Oct and Sunday 1 Nov are off
 const dayTypeOf = (ms: number) => ([0, 6].includes(new Date(ms).getUTCDay()) ? "WEEKEND" : "WORKING") as "WEEKEND" | "WORKING";

@@ -6,8 +6,8 @@ import {
   verifySessionToken,
 } from "./jwt";
 
-export async function createSession(userId: string) {
-  const token = await signSessionToken(userId);
+export async function createSession(userId: string, version: number) {
+  const token = await signSessionToken(userId, version);
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,

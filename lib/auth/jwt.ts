@@ -11,8 +11,12 @@ function getKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function signSessionToken(userId: string) {
-  return new SignJWT({})
+/**
+ * `version` is the user's `sessionVersion` at sign-in time. Changing or resetting the
+ * password bumps that column, so tokens issued before the change stop working.
+ */
+export async function signSessionToken(userId: string, version: number) {
+  return new SignJWT({ ver: version })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
     .setIssuedAt()
@@ -24,7 +28,12 @@ export async function verifySessionToken(token: string) {
   const key = getKey();
   try {
     const { payload } = await jwtVerify(token, key, { algorithms: ["HS256"] });
-    return payload.sub ? { userId: payload.sub } : null;
+    if (!payload.sub) return null;
+    return {
+      userId: payload.sub,
+      // Tokens issued before token versioning have no `ver` claim and must not match.
+      version: typeof payload.ver === "number" ? payload.ver : -1,
+    };
   } catch {
     return null;
   }

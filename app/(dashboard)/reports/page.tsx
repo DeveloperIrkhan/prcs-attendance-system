@@ -28,7 +28,8 @@ export default async function ReportsPage({
   const { user, scope } = await requireScope();
   const sp = await searchParams;
   const params = parseReportParams((k) => sp[k]);
-  const meta = REPORT_TYPE.find((t: any) => t.value === params.type)!;
+  const meta =
+    REPORT_TYPE.find((t) => t.value === params.type) ?? REPORT_TYPE[0];
   const has = (f: (typeof meta.filters)[number]) => meta.filters.includes(f);
   const isSalary = params.type === "salary";
 
@@ -67,7 +68,7 @@ export default async function ReportsPage({
       <h1 className="text-xl font-semibold text-green-800">Reports</h1>
 
       <nav className="flex flex-wrap gap-2" aria-label="Report type">
-        {REPORT_TYPE.map((t: any) => (
+        {REPORT_TYPE.map((t) => (
           <Link
             key={t.value}
             href={`/reports?type=${t.value}`}

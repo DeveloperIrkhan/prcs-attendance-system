@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     },
   });
 
-  await createSession(user.id);
+  await createSession(user.id, user.sessionVersion);
   return NextResponse.json({
     redirectTo: user.mustChangePassword
       ? "/change-password"

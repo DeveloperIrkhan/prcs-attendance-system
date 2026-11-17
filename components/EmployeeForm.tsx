@@ -78,7 +78,7 @@ export default function EmployeeForm({
             type="button"
             onClick={() => {
               console.log("Add another employee clicked");
-              window.location.href = "/employees/new";
+              router.push("/employees/new");
             }}
             className="green-button hoverEffect"
           >

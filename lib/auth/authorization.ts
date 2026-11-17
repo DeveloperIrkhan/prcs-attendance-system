@@ -29,6 +29,7 @@ export const getCurrentUser = cache(async () => {
       email: true,
       isActive: true,
       mustChangePassword: true,
+      sessionVersion: true,
       employeeId: true,
       role: { select: { id: true, name: true, permissions: true } },
       employee: {
@@ -44,6 +45,9 @@ export const getCurrentUser = cache(async () => {
   });
 
   if (!user || !user.isActive) return null;
+  // A password change / reset bumps sessionVersion, invalidating every older token.
+  if (user.sessionVersion !== session.version) return null;
+
   // The Admin role always holds every right, including ones added after the role was seeded.
   if (user.role.name === "ADMIN") {
     return { ...user, role: { ...user.role, permissions: [...ALL_PERMISSIONS] } };

@@ -3,8 +3,7 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LogIn, LogOut, User, KeyRound, ShieldCheck } from "lucide-react";
-import { FaUser } from "react-icons/fa";
+import { LogOut, User, KeyRound } from "lucide-react";
 type requiredUser = {
   fullName?: string;
   role?: string;
@@ -76,7 +75,7 @@ const LogoutMenu = ({ user }: IUser) => {
             </Link>
 
             <Link
-              href="/auth/change-password"
+              href="/change-password"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
             >

@@ -17,10 +17,7 @@ export const PERMISSIONS = {
   // Issuing NOC documents. Applying for a NOC needs no permission: any employee can. Deciding on
   // one follows the approval level (DD, CEO), like leave. HR and Admin issue the document.
   NOC_ISSUE: "noc:issue",
-  REPORTS_VIEW: "reports:view",
   REPORTS_EXPORT: "reports:export",
-  BACKUP_MANAGE: "backup:manage",
-  AUDIT_VIEW: "audit:view",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -86,8 +83,11 @@ export const PERMISSION_GROUPS: {
   {
     title: "Reports",
     items: [
-      { key: "reports:view", label: "View reports" },
-      { key: "reports:export", label: "Export reports" },
+      {
+        key: "reports:export",
+        label: "Export reports",
+        hint: "Viewing reports follows the person's data scope (department or organization).",
+      },
     ],
   },
   {
@@ -95,8 +95,6 @@ export const PERMISSION_GROUPS: {
     items: [
       { key: "users:manage", label: "Manage users" },
       { key: "roles:manage", label: "Manage roles and permissions" },
-      { key: "backup:manage", label: "Manage backups" },
-      { key: "audit:view", label: "View audit log" },
     ],
   },
 ];
@@ -128,7 +126,6 @@ export const SYSTEM_ROLES: {
       P.LEAVES_MANAGE,
       P.LEAVES_REQUEST,
       P.NOC_ISSUE,
-      P.REPORTS_VIEW,
       P.REPORTS_EXPORT,
     ],
   },
@@ -140,7 +137,6 @@ export const SYSTEM_ROLES: {
       P.ATTENDANCE_IMPORT,
       P.ATTENDANCE_VIEW,
       P.ATTENDANCE_VIEW_OWN,
-      P.REPORTS_VIEW,
       P.LEAVES_REQUEST,
       P.REPORTS_EXPORT,
     ],

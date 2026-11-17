@@ -43,7 +43,7 @@ const initials = (name: string) =>
     .join("");
 
 const IMPORT_LABEL: Record<string, { text: string; className: string }> = {
-  COMPLETED: { text: "Completed", className: "text-green-400" },
+  COMPLETED: { text: "Completed", className: "text-red-400" },
   COMPLETED_WITH_ERRORS: {
     text: "Needs attention",
     className: "text-amber-400",
@@ -64,7 +64,7 @@ export default function AppShell({
   const importLabel = lastImport
     ? (IMPORT_LABEL[lastImport.status] ?? {
         text: lastImport.status,
-        className: "text-green-300",
+        className: "text-red-300",
       })
     : null;
 
@@ -97,7 +97,7 @@ export default function AppShell({
     };
   }, []);
   return (
-    <div className="flex min-h-screen bg-red-50 text-green-900">
+    <div className="flex min-h-screen bg-red-50 text-red-900">
       {/* Sidebar: fixed to the left edge, full screen height (large screens only) */}
       <aside className="hidden w-64 flex-col bg-black lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:h-dvh">
         <div className="flex items-center gap-3 shadow-2xl px-5 py-5">
@@ -112,18 +112,18 @@ export default function AppShell({
           </span>
           <Link href="/" className="leading-tight">
             <p className="font-semibold text-white">PRCS Attendance</p>
-            <p className="text-xs text-green-400">system dashboard</p>
+            <p className="text-xs text-red-400">system dashboard</p>
           </Link>
         </div>
 
         <SidebarNav sections={sections} />
 
         {canViewImports && (
-          <div className="m-3 rounded-lg bg-green-800 p-4 text-sm">
+          <div className="m-3 rounded-lg bg-red-800 p-4 text-sm">
             <p className="font-medium text-white">Last import</p>
             {lastImport && importLabel ? (
               <>
-                <p className="mt-1 text-green-300">
+                <p className="mt-1 text-red-300">
                   {MONTHS[lastImport.month - 1]} {lastImport.year}{" "}
                   <span className={importLabel.className}>
                     ({importLabel.text})
@@ -131,13 +131,13 @@ export default function AppShell({
                 </p>
                 <Link
                   href="/attendance/imports"
-                  className="mt-2 inline-block text-green-400 hover:underline"
+                  className="mt-2 inline-block text-red-400 hover:underline"
                 >
                   View import history
                 </Link>
               </>
             ) : (
-              <p className="mt-1 text-green-400">Nothing imported yet.</p>
+              <p className="mt-1 text-red-400">Nothing imported yet.</p>
             )}
           </div>
         )}
@@ -145,9 +145,9 @@ export default function AppShell({
 
       {/* Main area: pl-64 leaves room for the fixed sidebar (same as the sidebar's w-64) */}
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-green-200 bg-white/95 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b border-red-200 bg-white/95 backdrop-blur">
           <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-green-800 text-white lg:hidden">
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-red-800 text-white lg:hidden">
               <Fingerprint size={18} aria-hidden />
             </span>
 
@@ -166,7 +166,7 @@ export default function AppShell({
                   name="q"
                   type="search"
                   placeholder="Search employees by name, code or ID"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-gray-500 focus:bg-white focus:outline-green-800"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-gray-500 focus:bg-white focus:outline-red-800"
                 />
               </form>
             ) : (
@@ -183,7 +183,7 @@ export default function AppShell({
                     ? `${notifications} items need attention`
                     : "Nothing needs attention"
                 }
-                className="relative rounded-lg p-2 text-gray-500 hover:bg-green-100 focus-visible:outline-2 focus-visible:outline-gray-500"
+                className="relative rounded-lg p-2 text-gray-500 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-gray-500"
               >
                 <Bell size={20} aria-hidden />
                 {notifications > 0 && (
@@ -197,7 +197,7 @@ export default function AppShell({
                 onClick={() => setOpen((v) => !v)}
                 className="flex items-center gap-2.5"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-900 text-xs font-semibold text-white">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-900 text-xs font-semibold text-white">
                   {initials(user.fullName)}
                 </span>
               </div>
@@ -213,39 +213,32 @@ export default function AppShell({
                   <Link
                     href="/"
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                   >
                     <User className="w-4 h-4" /> My Profile
                   </Link>
 
                   <Link
-                    href="/auth/change-password"
+                    href="/change-password"
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                   >
                     <KeyRound className="w-4 h-4" /> Change Password
                   </Link>
 
-                  {user.roleName === "Admin" && (
+                  {user.roleName === "ADMIN" && (
                     <>
                       <Link
-                        href="/dashboard/users/pending-approvals"
+                        href="/users"
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                       >
-                        <ShieldCheck className="w-4 h-4" /> Pending Approvals
+                        <ShieldCheck className="w-4 h-4" /> Users
                       </Link>
                       <Link
-                        href="/dashboard/users/view-all"
+                        href="/roles"
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
-                      >
-                        <ShieldCheck className="w-4 h-4" /> All Users
-                      </Link>
-                      <Link
-                        href="/dashboard/roles/view-all"
-                        onClick={() => setOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                       >
                         <ShieldCheck className="w-4 h-4" /> Manage Roles
                       </Link>
@@ -257,7 +250,7 @@ export default function AppShell({
                       setOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-green-50 transition-colors border-t border-slate-100"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-slate-100"
                   >
                     <LogOut className="w-4 h-4" /> Logout
                   </button>

@@ -7,8 +7,7 @@ export type ReportType =
   | "overtime"
   | "department"
   | "history"
-  | "leaves"
-  | "shortleaves";
+  | "leaves";
 
 export const REPORT_TYPE: {
   value: ReportType;

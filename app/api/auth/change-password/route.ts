@@ -1,9 +1,9 @@
 import { hashPassword, verifyPassword } from "@/lib/auth/password.service";
 import { apiAuth } from "@/lib/auth/authorization";
-import type { User } from "@/lib/generated/prisma/client";
+import { createSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { changePasswordSchema } from "@/validations/auth.validation";
-import {  NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const auth = await apiAuth({ allowPasswordChange: true });
@@ -42,15 +42,22 @@ export async function POST(request: Request) {
     );
   }
 
-  await prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: auth.user.id },
     data: {
       passwordHash: await hashPassword(newPassword),
       mustChangePassword: false,
       failedLoginAttempts: 0,
       lockedUntil: null,
+      // Sign out every other session that used the old password.
+      sessionVersion: { increment: 1 },
     },
+    select: { sessionVersion: true },
   });
+
+  // Keep this browser signed in on the new version.
+  await createSession(auth.user.id, updated.sessionVersion);
+
   return NextResponse.json(
     { success: true, message: "Password changed successfully" },
     { status: 200 },

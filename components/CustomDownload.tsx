@@ -64,6 +64,8 @@ export default function CustomDownload({ baseQuery, columns, storageKey }: Props
     } catch {
       // saving the choice is a convenience only
     }
+    // Hard navigation is deliberate: the response is a file download, not a page.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(`/api/reports?${query.toString()}`);
   };
 

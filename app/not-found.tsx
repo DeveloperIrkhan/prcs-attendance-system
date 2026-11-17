@@ -8,10 +8,11 @@ const NotFound = () => {
         <div className="flex flex-col md:flex-row h-full">
           <div className="w-full flex flex-col justify-center items-center h-full gap-y-3">
             <h2 className="text-xl md:text-4xl text-white">
-              We're Sorry, Something went wrong here!
+              We&apos;re Sorry, Something went wrong here!
             </h2>
             <h2 className="text-xl font-medium text-white">
-              We can't find the page you looking for, We're working on it.
+              We can&apos;t find the page you looking for, We&apos;re working
+              on it.
             </h2>
             <div className="flex gap-x-2 text-white">
               <Loader2 className="animate-spin" /> we are working on it

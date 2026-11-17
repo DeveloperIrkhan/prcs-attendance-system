@@ -45,14 +45,6 @@ const attendanceEmployeeSelect = {
   },
 } satisfies Prisma.EmployeeSelect;
 
-type AttendanceWithEmployee = Prisma.AttendanceGetPayload<{
-  include: {
-    employee: {
-      select: typeof attendanceEmployeeSelect;
-    };
-  };
-}>;
-
 export async function listAttendanceRecords(opts: {
   start: Date;
   end: Date;

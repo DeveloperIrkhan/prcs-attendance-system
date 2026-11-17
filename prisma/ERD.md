@@ -253,6 +253,7 @@ erDiagram
   String passwordHash
   Boolean isActive
   Boolean mustChangePassword
+  Int sessionVersion
   Int failedLoginAttempts
   DateTime lockedUntil "nullable"
   String roleId FK
@@ -599,6 +600,7 @@ Properties as follows:
 - `passwordHash`:
 - `isActive`:
 - `mustChangePassword`:
+- `sessionVersion`: * Bumped on password change/reset; older session tokens stop working.
 - `failedLoginAttempts`:
 - `lockedUntil`:
 - `roleId`:

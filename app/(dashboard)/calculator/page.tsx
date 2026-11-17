@@ -34,16 +34,19 @@ export default function CalculatorPage() {
     []
   );
 
-  const inputDigit = (digit: string) => {
-    if (display === "Error" || waitingForOperand) {
-      setDisplay(digit);
-      setWaitingForOperand(false);
-    } else {
-      setDisplay(display === "0" ? digit : display + digit);
-    }
-  };
+  const inputDigit = useCallback(
+    (digit: string) => {
+      if (display === "Error" || waitingForOperand) {
+        setDisplay(digit);
+        setWaitingForOperand(false);
+      } else {
+        setDisplay(display === "0" ? digit : display + digit);
+      }
+    },
+    [display, waitingForOperand]
+  );
 
-  const inputDecimal = () => {
+  const inputDecimal = useCallback(() => {
     if (display === "Error" || waitingForOperand) {
       setDisplay("0.");
       setWaitingForOperand(false);
@@ -53,45 +56,48 @@ export default function CalculatorPage() {
     if (!display.includes(".")) {
       setDisplay(display + ".");
     }
-  };
+  }, [display, waitingForOperand]);
 
-  const clear = () => {
+  const clear = useCallback(() => {
     setDisplay("0");
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(false);
-  };
+  }, []);
 
-  const inputOperator = (nextOperator: string) => {
-    const inputValue = parseFloat(display);
+  const inputOperator = useCallback(
+    (nextOperator: string) => {
+      const inputValue = parseFloat(display);
 
-    if (display === "Error") return;
+      if (display === "Error") return;
 
-    if (previousValue !== null && operator && !waitingForOperand) {
-      const result = calculate(
-        parseFloat(previousValue),
-        inputValue,
-        operator
-      );
+      if (previousValue !== null && operator && !waitingForOperand) {
+        const result = calculate(
+          parseFloat(previousValue),
+          inputValue,
+          operator
+        );
 
-      if (!Number.isFinite(result)) {
-        setDisplay("Error");
-        setPreviousValue(null);
-        setOperator(null);
-        return;
+        if (!Number.isFinite(result)) {
+          setDisplay("Error");
+          setPreviousValue(null);
+          setOperator(null);
+          return;
+        }
+
+        setDisplay(String(Number(result.toPrecision(12))));
+        setPreviousValue(String(result));
+      } else {
+        setPreviousValue(display);
       }
 
-      setDisplay(String(Number(result.toPrecision(12))));
-      setPreviousValue(String(result));
-    } else {
-      setPreviousValue(display);
-    }
+      setOperator(nextOperator);
+      setWaitingForOperand(true);
+    },
+    [calculate, display, operator, previousValue, waitingForOperand]
+  );
 
-    setOperator(nextOperator);
-    setWaitingForOperand(true);
-  };
-
-  const performCalculation = () => {
+  const performCalculation = useCallback(() => {
     if (previousValue === null || operator === null) return;
 
     const first = parseFloat(previousValue);
@@ -116,18 +122,18 @@ export default function CalculatorPage() {
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(true);
-  };
+  }, [calculate, display, operator, previousValue]);
 
-  const handlePercent = () => {
+  const handlePercent = useCallback(() => {
     const value = parseFloat(display);
     if (!Number.isFinite(value)) return;
     setDisplay(String(Number((value / 100).toPrecision(12))));
-  };
+  }, [display]);
 
-  const handleBackspace = () => {
+  const handleBackspace = useCallback(() => {
     if (display === "Error" || waitingForOperand) return;
     setDisplay(display.length > 1 ? display.slice(0, -1) : "0");
-  };
+  }, [display, waitingForOperand]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -146,7 +152,15 @@ export default function CalculatorPage() {
       else if (key === "Escape") clear();
       else if (key === "%") handlePercent();
     },
-    [display, previousValue, operator, waitingForOperand]
+    [
+      clear,
+      handleBackspace,
+      handlePercent,
+      inputDecimal,
+      inputDigit,
+      inputOperator,
+      performCalculation,
+    ]
   );
 
   useEffect(() => {
