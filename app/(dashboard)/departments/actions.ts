@@ -110,7 +110,7 @@ export async function removeDepartmentChargeAction(
   return { ok: true };
 }
 
-/** An employee (DD or above) acts as CEO or Chairman while that post is vacant. */
+/** An employee (DD or above) acts as Secretary General or Chairperson while that post is vacant. */
 export async function addActingApproverAction(
   _prev: ActionState,
   formData: FormData,
@@ -120,7 +120,7 @@ export async function addActingApproverAction(
   const level = String(formData.get("level") ?? "");
   if (!employeeId) return { error: "Select an employee." };
   if (level !== "CEO" && level !== "CHAIRMAN") {
-    return { error: "Choose CEO or Chairman." };
+    return { error: "Choose Secretary General or Chairperson." };
   }
 
   try {

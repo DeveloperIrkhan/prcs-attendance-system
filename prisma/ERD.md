@@ -73,6 +73,7 @@ erDiagram
   String earliestPunch
   String latestPunch
   Int overtimeMinMinutes
+  Int overtimeStartAfterMinutes
   Boolean offDayWorkIsOvertime
   Int defaultWeeklyOffDays
   Int shortLeaveMaxMinutes
@@ -246,6 +247,18 @@ erDiagram
   DateTime createdAt
   DateTime updatedAt
 }
+"AuditLog" {
+  String id PK
+  String actorId "nullable"
+  String actorName
+  String action
+  String entity
+  String entityId "nullable"
+  String summary
+  Json before "nullable"
+  Json after "nullable"
+  DateTime createdAt
+}
 "User" {
   String id PK
   String fullName
@@ -367,6 +380,7 @@ Properties as follows:
 - `earliestPunch`:
 - `latestPunch`:
 - `overtimeMinMinutes`:
+- `overtimeStartAfterMinutes`: Minutes after the shift end that are still not overtime (the hand-over hour).
 - `offDayWorkIsOvertime`:
 - `defaultWeeklyOffDays`:
 - `shortLeaveMaxMinutes`:
@@ -589,6 +603,24 @@ Properties as follows:
 - `isSystem`:
 - `createdAt`:
 - `updatedAt`:
+
+### `AuditLog`
+
+Who changed what: rules, employees, users, roles, departments, leave decisions, imports.
+The actor name is copied so an entry still reads correctly if the login is renamed.
+
+Properties as follows:
+
+- `id`:
+- `actorId`:
+- `actorName`:
+- `action`:
+- `entity`:
+- `entityId`:
+- `summary`:
+- `before`:
+- `after`:
+- `createdAt`:
 
 ### `User`
 

@@ -3,7 +3,9 @@
 import { startTransition, useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
 import { NOC_CATEGORIES } from "@/lib/noc/flow";
+import Spinner from "./Spinner";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -15,6 +17,7 @@ const input = "block w-full rounded border border-zinc-400 px-3 py-2 text-sm";
 export default function NocRequestForm({ action }: Props) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(action, {} as ActionState);
+  useActionToast(state, "Request sent.");
 
   useEffect(() => {
     if (state.ok) router.push("/noc/my");
@@ -28,6 +31,7 @@ export default function NocRequestForm({ action }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="max-w-xl space-y-4">
+      {pending && <Spinner />}
       <div className="space-y-1">
         <label htmlFor="noc-category" className="text-sm font-medium">
           What is the NOC for?
@@ -80,9 +84,9 @@ export default function NocRequestForm({ action }: Props) {
       </div>
 
       <p className="rounded bg-zinc-50 p-3 text-xs text-zinc-600">
-        Your request goes to your department DD first, then to the CEO for a
-        Yes or No. If both agree, HR will issue the NOC and you can download it
-        here.
+        Your request goes to your department head first (the DD, or the HOD where
+        the department has no DD), then to the Secretary General for a Yes or No.
+        If both agree, HR will issue the NOC and you can download it here.
       </p>
 
       {state.error && (

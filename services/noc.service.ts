@@ -20,6 +20,7 @@ import {
   type NocStatus,
 } from "@/lib/noc/flow";
 import { inspectNocFile } from "@/lib/noc/file";
+import { recordAudit } from "./audit.service";
 
 /** A person may have this many open requests (waiting or approved but not issued) at a time. */
 const MAX_OPEN_REQUESTS = 5;
@@ -43,7 +44,29 @@ async function findDepartmentDd(requesterId: string, departmentId: string) {
   });
 }
 
-/** Is there an active CEO / Chairman (or acting CEO) login who could answer? */
+/**
+ * The department head who must answer first: its DD, or its HOD when the department has no
+ * DD. Returns null when neither exists, so the request goes straight to the Secretary General.
+ */
+async function findDepartmentHead(
+  requesterId: string,
+  departmentId: string,
+): Promise<"DD" | "HOD" | null> {
+  if (await findDepartmentDd(requesterId, departmentId)) return "DD";
+  const hod = await prisma.employee.findFirst({
+    where: {
+      id: { not: requesterId },
+      isActive: true,
+      designation: { approvalLevel: "HOD" },
+      user: { is: { isActive: true } },
+      departmentId,
+    },
+    select: { id: true },
+  });
+  return hod ? "HOD" : null;
+}
+
+/** Is there an active Secretary General / Chairperson (or acting one) login who could answer? */
 async function hasFinalApprover(level: NocApproverLevel, excludeId: string) {
   const levels = [level, ...levelsAbove(level as ApproverLevel)];
   const found = await prisma.employee.findFirst({
@@ -94,14 +117,20 @@ export async function createNocRequest(
   }
 
   const level = getApproverIdentity(user)?.level ?? "STAFF";
-  const departmentDd =
-    level === "STAFF" ? await findDepartmentDd(employee.id, employee.departmentId) : null;
-  const route = startNocRoute({ requesterLevel: level, hasDepartmentDd: Boolean(departmentDd) });
+  const departmentHead =
+    level === "STAFF"
+      ? await findDepartmentHead(employee.id, employee.departmentId)
+      : null;
+  const route = startNocRoute({
+    requesterLevel: level,
+    hasDepartmentDd: departmentHead === "DD",
+    hasDepartmentHod: departmentHead === "HOD",
+  });
 
   if (route.status === "PENDING_FINAL" && route.approverLevel && route.approverLevel !== "DD") {
     if (!(await hasFinalApprover(route.approverLevel, employee.id))) {
       throw new ServiceError(
-        `No active ${APPROVER_LABEL[route.approverLevel]} login exists to answer this request. Ask HR to set the approval level on the designation, or to assign an acting CEO on the Departments page.`,
+        `No active ${APPROVER_LABEL[route.approverLevel]} login exists to answer this request. Ask HR to set the approval level on the designation, or to assign an acting Secretary General on the Departments page.`,
       );
     }
   }
@@ -177,6 +206,15 @@ export async function listMyNocRequests(employeeId: string) {
 /** Requests waiting for this person's yes / no, by level (parent rights included). */
 function pendingWhere(me: ApproverIdentity): Prisma.NocRequestWhereInput {
   const or: Prisma.NocRequestWhereInput[] = [];
+  if (me.level === "HOD") {
+    or.push({
+      status: "PENDING_DD",
+      approverLevel: "HOD",
+      approverDepartmentId: {
+        in: [me.departmentId, ...(me.chargeDepartmentIds ?? [])],
+      },
+    });
+  }
   if (me.level === "DD") {
     or.push({
       status: "PENDING_DD",
@@ -186,7 +224,7 @@ function pendingWhere(me: ApproverIdentity): Prisma.NocRequestWhereInput {
     });
   }
   if (me.level === "CEO" || me.level === "CHAIRMAN") {
-    or.push({ status: "PENDING_DD" }); // the CEO can answer at the DD step too
+    or.push({ status: "PENDING_DD" }); // they can answer at the department-head step too
   }
   if (me.level === "CEO") {
     or.push({ status: "PENDING_FINAL", approverLevel: "CEO" });
@@ -246,7 +284,8 @@ export async function decideNocRequest(
     request.status === "PENDING_DD"
       ? {
           employeeId: request.employeeId,
-          approverLevel: "DD",
+          // the department-head step may be routed to a DD or to an HOD
+          approverLevel: (request.approverLevel ?? "DD") as ApproverLevel,
           approverDepartmentId: request.approverDepartmentId,
         }
       : {
@@ -288,6 +327,25 @@ export async function decideNocRequest(
   if (result.count !== 1) {
     throw new ServiceError("This request was just decided by someone else. Please refresh.");
   }
+  const employee = await prisma.employee.findUnique({
+    where: { id: request.employeeId },
+    select: { name: true },
+  });
+  await recordAudit({
+    action: `noc.${decision === "YES" ? "approve" : decision === "NO" ? "reject" : "cancel"}`,
+    entity: "NocRequest",
+    entityId: id,
+    summary: `${
+      decision === "YES"
+        ? "Approved"
+        : decision === "NO"
+          ? "Rejected"
+          : "Cancelled"
+    } the NOC request of ${employee?.name ?? "an employee"}`,
+    before: { status: request.status, approverLevel: request.approverLevel },
+    after: { status: next.status, approverLevel: next.approverLevel },
+    actor: { id: user.id, name: user.fullName },
+  });
 }
 
 /** HR / Admin upload the NOC document. Uploading again replaces the file. */
@@ -295,11 +353,16 @@ export async function issueNoc(user: AuthUser, id: string, file: File) {
   if (!userCanIssue(user)) throw new ServiceError("You cannot issue NOC documents.");
   const request = await prisma.nocRequest.findUnique({
     where: { id },
-    select: { id: true, status: true, employeeId: true },
+    select: {
+      id: true,
+      status: true,
+      employeeId: true,
+      employee: { select: { name: true } },
+    },
   });
   if (!request) throw new ServiceError("This NOC request was not found.");
   if (request.status !== "APPROVED" && request.status !== "ISSUED") {
-    throw new ServiceError("A NOC can be uploaded only after the CEO has approved the request.");
+    throw new ServiceError("A NOC can be uploaded only after the Secretary General has approved the request.");
   }
   if (request.employeeId === user.employeeId) {
     throw new ServiceError("You cannot issue your own NOC. Ask another HR or Admin user.");
@@ -334,6 +397,15 @@ export async function issueNoc(user: AuthUser, id: string, file: File) {
       data: { status: "ISSUED", issuedById: user.id, issuedAt: new Date() },
     }),
   ]);
+  await recordAudit({
+    action: "noc.issue",
+    entity: "NocRequest",
+    entityId: id,
+    summary: `Issued the NOC document for ${request.employee.name} (${check.fileName})`,
+    before: { status: request.status },
+    after: { status: "ISSUED", fileName: check.fileName },
+    actor: { id: user.id, name: user.fullName },
+  });
 }
 
 /**

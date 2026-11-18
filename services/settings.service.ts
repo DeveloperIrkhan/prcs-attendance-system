@@ -4,6 +4,7 @@ import { ServiceError } from "@/lib/action-state";
 import type { DayType } from "@/lib/attendance/attendance-rules";
 import { monthRange, toIsoDate, parseIsoDate } from "@/lib/attendance/dates";
 import type { SettingsInput } from "@/validations/attendance-settings.validation";
+import { recordAudit } from "./audit.service";
 
 export const getSettings = () => {
   return prisma.attendanceSettings.upsert({
@@ -13,13 +14,25 @@ export const getSettings = () => {
   });
 };
 
-export function updateSettings(input: SettingsInput, userId: string) {
+export async function updateSettings(input: SettingsInput, userId: string) {
+  const before = await prisma.attendanceSettings.findUnique({
+    where: { id: "default" },
+  });
   const data = { ...input, updatedById: userId };
-  return prisma.attendanceSettings.upsert({
+  const after = await prisma.attendanceSettings.upsert({
     where: { id: "default" },
     update: data,
     create: { id: "default", ...data },
   });
+  await recordAudit({
+    action: "settings.update",
+    entity: "AttendanceSettings",
+    entityId: "default",
+    summary: "Updated the attendance rules",
+    before,
+    after,
+  });
+  return after;
 }
 
 export async function getMonthCalendar(year: number, month: number) {

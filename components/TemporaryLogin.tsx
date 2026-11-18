@@ -2,6 +2,8 @@
 
 import { startTransition, useActionState, useState } from "react";
 import type { ActionState, IssuedLogin } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
+import InlineSpinner from "./InlineSpinner";
 
 /** Shows a one-time password once, with a copy button. Only the hash is stored on the server. */
 export function CredentialsBox({
@@ -69,6 +71,7 @@ export function ResetLoginForm({
     action,
     {} as ActionState,
   );
+  useActionToast(state, "New password issued.");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -86,7 +89,7 @@ export function ResetLoginForm({
           disabled={pending}
           className="green-button-inverse hoverEffect disabled:opacity-50"
         >
-          {pending ? "Working..." : label}
+          {pending ? <InlineSpinner className="h-4 w-4" /> : label}
         </button>
       </form>
       {state.error && (

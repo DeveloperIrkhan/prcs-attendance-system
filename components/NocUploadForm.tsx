@@ -2,7 +2,9 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import { NOC_ACCEPT, NOC_MAX_BYTES } from "@/lib/noc/file";
+import InlineSpinner from "./InlineSpinner";
 
 type Props = {
   id: string;
@@ -23,10 +25,12 @@ export default function NocUploadForm({ id, label }: Props) {
     const file = fileRef.current?.files?.[0];
     if (!file) {
       setError("Choose a file first.");
+      toast.error("Choose a file first.");
       return;
     }
     if (file.size > NOC_MAX_BYTES) {
       setError("The file is too large. The limit is 3 MB.");
+      toast.error("The file is too large. The limit is 3 MB.");
       return;
     }
     if (!window.confirm(`${label}: ${file.name}?`)) return;
@@ -39,12 +43,15 @@ export default function NocUploadForm({ id, label }: Props) {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         setError(data.error ?? "Could not upload the file.");
+        toast.error(data.error ?? "Could not upload the file.");
         return;
       }
       if (fileRef.current) fileRef.current.value = "";
+      toast.success(`${label}: saved.`);
       router.refresh();
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
+      toast.error("Could not reach the server. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -64,7 +71,7 @@ export default function NocUploadForm({ id, label }: Props) {
         disabled={busy}
         className="rounded border border-red-800 bg-red-800 px-3 py-1 text-xs text-white hover:bg-white hover:text-red-800 disabled:opacity-50"
       >
-        {busy ? "Uploading..." : label}
+        {busy ? <InlineSpinner className="h-4 w-4" /> : label}
       </button>
       {error && <span className="basis-full text-xs text-red-600">{error}</span>}
     </form>

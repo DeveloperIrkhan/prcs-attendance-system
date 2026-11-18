@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
 import Spinner from "./Spinner";
 
 type Props = {
@@ -24,6 +25,7 @@ export default function LeaveTypeForm({
     {} as ActionState,
   );
   const formRef = useRef<HTMLFormElement>(null);
+  useActionToast(state, "Leave type saved.");
 
   useEffect(() => {
     if (state.ok && resetOnSuccess) formRef.current?.reset();

@@ -19,7 +19,7 @@ async function main() {
     await prisma.role.upsert({
       where: { name: role.name },
       // ADMIN always follows the code, so a newly added permission reaches it.
-      // HR, IT_OFFICER and EMPLOYEE are only created here: once an Admin has edited their rights
+      // HR, IT and EMPLOYEE are only created here: once an Admin has edited their rights
       // on the Roles page, running the seed again must not put the defaults back.
       update:
         role.name === "ADMIN"

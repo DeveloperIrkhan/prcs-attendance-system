@@ -6,6 +6,7 @@ import { evaluateDay, formatMinutes, toMinutes, toRuleConfig } from "@/lib/atten
 import { monthRange } from "@/lib/attendance/dates";
 import type { CorrectionInput } from "@/validations/attendance-correction.validation";
 import { getMonthCalendar, getSettings, makeDayTypeResolver } from "./settings.service";
+import { recordAudit } from "./audit.service";
 
 const atMinutes = (date: Date, minutes: number) => new Date(date.getTime() + minutes * 60_000);
 
@@ -14,7 +15,14 @@ const atMinutes = (date: Date, minutes: number) => new Date(date.getTime() + min
 export async function correctAttendance(input: CorrectionInput, userId: string) {
   const record = await prisma.attendance.findUnique({
     where: { id: input.id },
-    select: { id: true, date: true },
+    select: {
+      id: true,
+      date: true,
+      status: true,
+      checkIn: true,
+      checkOut: true,
+      employee: { select: { name: true, employeeCode: true } },
+    },
   });
   if (!record) throw new ServiceError("Attendance record not found.");
 
@@ -67,10 +75,27 @@ export async function correctAttendance(input: CorrectionInput, userId: string) 
     };
   }
 
-  return prisma.attendance.update({
+  const updated = await prisma.attendance.update({
     where: { id: record.id },
     data: { ...data, isManual: true, editedById: userId, editedAt: new Date(), editReason: input.reason },
   });
+  await recordAudit({
+    action: "attendance.correct",
+    entity: "Attendance",
+    entityId: record.id,
+    summary: `Corrected the attendance of ${record.employee.name} (${record.employee.employeeCode}) on ${record.date.toISOString().slice(0, 10)}: ${input.reason}`,
+    before: {
+      status: record.status,
+      checkIn: record.checkIn,
+      checkOut: record.checkOut,
+    },
+    after: {
+      status: updated.status,
+      checkIn: updated.checkIn,
+      checkOut: updated.checkOut,
+    },
+  });
+  return updated;
 }
 
 export function getAttendanceRecord(id: string) {

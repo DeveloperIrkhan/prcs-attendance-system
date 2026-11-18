@@ -19,7 +19,7 @@ export default async function MonthlySummaryPage({
 }: {
   searchParams: SearchParams;
 }) {
-  // HR, IT Officer, Admin, CEO, Chairman: everyone. DD: own department only.
+  // HR, IT, Admin, Secretary General, Chairperson: everyone. DD / HOD: own department only.
   const { user, scope } = await requireScope();
   const canReview = hasPermission(user, PERMISSIONS.ATTENDANCE_EDIT);
   const sp = await searchParams;
@@ -183,7 +183,7 @@ export default async function MonthlySummaryPage({
                       {num(r.shortLeaveApprovedMinutes)}
                     </td>
                     <td className="p-3 text-right">
-                      {hours(r.overtimeMinutes)} hrs
+                      {hours(r.overtimeMinutes)}
                     </td>
                     <td className="p-3 text-right">
                       {hours(r.workedMinutes)} hrs

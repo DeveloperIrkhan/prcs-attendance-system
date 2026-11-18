@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { MONTHS } from "@/lib/attendance/months";
 import type { ImportSummary } from "@/lib/attendance/import-types";
 import ImportStatusBadge from "./ImportStatusBadge";
+import Spinner from "./Spinner";
 
 export default function ImportForm({
   defaultMonth,
@@ -28,6 +30,7 @@ export default function ImportForm({
     const file = fileRef.current?.files?.[0];
     if (!file) {
       setError("Please choose an Excel file.");
+      toast.error("Please choose an Excel file.");
       return;
     }
 
@@ -44,12 +47,18 @@ export default function ImportForm({
       });
       const data = await res.json();
       if (data.batchId) {
-        setResult(data as ImportSummary);
+        const summary = data as ImportSummary;
+        setResult(summary);
+        toast.success(
+          `Imported ${summary.successfulRows} of ${summary.totalRows} rows.`,
+        );
       } else {
         setError(data.error ?? "Import failed.");
+        toast.error(data.error ?? "Import failed.");
       }
     } catch {
       setError("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -59,6 +68,7 @@ export default function ImportForm({
 
   return (
     <div className="max-w-2xl space-y-4">
+      {loading && <Spinner />}
       <form
         onSubmit={onSubmit}
         className="space-y-4 rounded-md shadow-lg bg-white p-6"

@@ -119,6 +119,8 @@ model AttendanceSettings {
   earliestPunch                String   @default("07:00")
   latestPunch                  String   @default("22:00")
   overtimeMinMinutes           Int      @default(0)
+  /// Minutes after the shift end that are still not overtime (the hand-over hour).
+  overtimeStartAfterMinutes    Int      @default(60)
   offDayWorkIsOvertime         Boolean  @default(false)
   defaultWeeklyOffDays         Int[]    @default([5, 6, 0])
   shortLeaveMaxMinutes         Int      @default(180)
@@ -349,9 +351,10 @@ model ActingApprover {
 
 enum ApprovalLevel {
   STAFF
-  DD  //Department Head / Director / Dean / HOD
-  CEO //Secretary General / CEO
-  CHAIRMAN //chairperson of the board
+  HOD //Head of Department: department head where there is no DD
+  DD  //Deputy Director / Department Head / Director / Dean
+  CEO //Secretary General
+  CHAIRMAN //Chairperson of the board
 }
 
 model ShortLeave {
@@ -382,6 +385,25 @@ model Role {
   users       User[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// Who changed what: rules, employees, users, roles, departments, leave decisions, imports.
+/// The actor name is copied so an entry still reads correctly if the login is renamed.
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actorName String
+  action    String // e.g. "settings.update", "employee.create"
+  entity    String // e.g. "AttendanceSettings", "Employee"
+  entityId  String?
+  summary   String
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+  @@index([actorId])
 }
 
 model User {

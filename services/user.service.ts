@@ -5,6 +5,7 @@ import { hashPassword } from "@/lib/auth/password.service";
 import { generateTemporaryPassword } from "@/lib/auth/temporary-password";
 import type { AuthUser } from "@/lib/auth/authorization";
 import { assertCanGrant } from "./role.service";
+import { recordAudit } from "./audit.service";
 import type {
   UserCreateInput,
   UserDetailsInput,
@@ -82,13 +83,13 @@ export async function createUser(
 
   const role = await prisma.role.findUnique({
     where: { id: input.roleId },
-    select: { id: true, permissions: true },
+    select: { id: true, name: true, permissions: true },
   });
   if (!role) throw new ServiceError("Selected role no longer exists.");
   assertCanGrant(actor, role.permissions);
 
   const password = generateTemporaryPassword();
-  await prisma.user.create({
+  const created = await prisma.user.create({
     data: {
       fullName: input.fullName,
       email: input.email,
@@ -98,6 +99,14 @@ export async function createUser(
       isActive: true,
       mustChangePassword: true,
     },
+  });
+  await recordAudit({
+    action: "user.create",
+    entity: "User",
+    entityId: created.id,
+    summary: `Created the user ${input.fullName} (${input.email}) with the ${role.name} role`,
+    after: { fullName: input.fullName, email: input.email, role: role.name },
+    actor: { id: actor.id, name: actor.fullName },
   });
   return { name: input.fullName, email: input.email, password };
 }
@@ -109,7 +118,7 @@ export async function updateUserDetails(
 ) {
   const user = await prisma.user.findUnique({
     where: { id: input.id },
-    select: { id: true, employeeId: true },
+    select: { id: true, employeeId: true, fullName: true, email: true },
   });
   if (!user) throw new ServiceError("User not found.");
   if (user.employeeId) {
@@ -119,10 +128,20 @@ export async function updateUserDetails(
   }
   await assertCanManageAccount(actor, input.id);
   await assertEmailFree(input.email, input.id);
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: input.id },
     data: { fullName: input.fullName, email: input.email },
   });
+  await recordAudit({
+    action: "user.update",
+    entity: "User",
+    entityId: input.id,
+    summary: `Updated the user ${input.fullName} (${input.email})`,
+    before: { fullName: user.fullName, email: user.email },
+    after: { fullName: input.fullName, email: input.email },
+    actor: { id: actor.id, name: actor.fullName },
+  });
+  return updated;
 }
 
 async function activeAdminCount(exceptUserId?: string) {
@@ -143,14 +162,19 @@ export async function changeUserRole(
   const actorId = actor.id;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, roleId: true, role: { select: { name: true } } },
+    select: {
+      id: true,
+      fullName: true,
+      roleId: true,
+      role: { select: { name: true } },
+    },
   });
   if (!user) throw new ServiceError("User not found.");
   if (user.roleId === roleId) return user;
 
   const role = await prisma.role.findUnique({
     where: { id: roleId },
-    select: { id: true, permissions: true },
+    select: { id: true, name: true, permissions: true },
   });
   if (!role) throw new ServiceError("Selected role no longer exists.");
 
@@ -164,7 +188,17 @@ export async function changeUserRole(
       "This is the last active Admin. Make another user Admin first.",
     );
   }
-  return prisma.user.update({ where: { id }, data: { roleId } });
+  const updated = await prisma.user.update({ where: { id }, data: { roleId } });
+  await recordAudit({
+    action: "user.change-role",
+    entity: "User",
+    entityId: id,
+    summary: `Changed the role of ${user.fullName} from ${user.role.name} to ${role.name}`,
+    before: { role: user.role.name },
+    after: { role: role.name },
+    actor: { id: actor.id, name: actor.fullName },
+  });
+  return updated;
 }
 
 export async function setUserActive(
@@ -176,7 +210,11 @@ export async function setUserActive(
   await assertCanManageAccount(actor, id);
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, role: { select: { name: true } } },
+    select: {
+      id: true,
+      fullName: true,
+      role: { select: { name: true } },
+    },
   });
   if (!user) throw new ServiceError("User not found.");
 
@@ -189,7 +227,17 @@ export async function setUserActive(
       );
     }
   }
-  return prisma.user.update({ where: { id }, data: { isActive } });
+  const updated = await prisma.user.update({ where: { id }, data: { isActive } });
+  await recordAudit({
+    action: isActive ? "user.activate" : "user.deactivate",
+    entity: "User",
+    entityId: id,
+    summary: `${isActive ? "Reactivated" : "Deactivated"} the user ${user.fullName}`,
+    before: { isActive: !isActive },
+    after: { isActive },
+    actor: { id: actor.id, name: actor.fullName },
+  });
+  return updated;
 }
 
 /** New random one-time password; the person must change it at next sign-in. Shown once. */
@@ -215,6 +263,13 @@ export async function resetUserPassword(
       // Invalidate any session that is still signed in with the old password.
       sessionVersion: { increment: 1 },
     },
+  });
+  await recordAudit({
+    action: "user.reset-password",
+    entity: "User",
+    entityId: id,
+    summary: `Issued a new one-time password for the user ${user.fullName}`,
+    actor: { id: actor.id, name: actor.fullName },
   });
   return { name: user.fullName, email: user.email, password };
 }

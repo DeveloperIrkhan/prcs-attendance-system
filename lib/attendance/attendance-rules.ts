@@ -14,6 +14,8 @@ export type RuleSettingsLike = {
   earliestPunch: string; // "HH:mm", punches before this are ignored
   latestPunch: string; // "HH:mm", punches after this are ignored
   overtimeMinMinutes: number;
+  /** Minutes after the shift end that are still not overtime. Missing = 60. */
+  overtimeStartAfterMinutes?: number;
   offDayWorkIsOvertime: boolean;
   /** "HH:mm": a check-out before this is a half day. Empty or missing = rule off. */
   earlyLeaveHalfDayBefore?: string | null;
@@ -30,6 +32,7 @@ export type RuleConfig = {
   earliestPunch: number;
   latestPunch: number;
   overtimeMinMinutes: number;
+  overtimeStartAfterMinutes: number;
   offDayWorkIsOvertime: boolean;
   /** minutes since midnight, or null when the rule is off */
   earlyLeaveHalfDayBefore: number | null;
@@ -79,6 +82,7 @@ export function toRuleConfig(s: RuleSettingsLike): RuleConfig {
     earliestPunch: toMinutes(s.earliestPunch),
     latestPunch: toMinutes(s.latestPunch),
     overtimeMinMinutes: s.overtimeMinMinutes,
+    overtimeStartAfterMinutes: s.overtimeStartAfterMinutes ?? 60,
     offDayWorkIsOvertime: s.offDayWorkIsOvertime,
     earlyLeaveHalfDayBefore: s.earlyLeaveHalfDayBefore
       ? toMinutes(s.earlyLeaveHalfDayBefore)
@@ -251,7 +255,12 @@ export function evaluateDay(input: DayInput, cfg: RuleConfig): DayResult {
     }
   }
 
-  const rawOvertime = Math.max(0, last - cfg.shiftEnd);
+  // The first hour after the shift end is the hand-over time: it is not overtime.
+  // Only the time beyond that buffer counts, and it is paid by the hour.
+  const rawOvertime = Math.max(
+    0,
+    last - cfg.shiftEnd - cfg.overtimeStartAfterMinutes,
+  );
   const overtimeMinutes = rawOvertime >= cfg.overtimeMinMinutes ? rawOvertime : 0;
 
   return finish({

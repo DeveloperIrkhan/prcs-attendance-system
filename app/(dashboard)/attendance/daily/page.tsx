@@ -42,7 +42,7 @@ export default async function DailyAttendancePage({
 }: {
   searchParams: SearchParams;
 }) {
-  // HR, IT Officer, Admin, CEO, Chairman: everyone. DD: their own departments only.
+  // HR, IT, Admin, CEO, Chairman: everyone. DD: their own departments only.
   const { user, scope } = await requireScope();
   const sp = await searchParams;
   const canEdit = hasPermission(user, PERMISSIONS.ATTENDANCE_EDIT);

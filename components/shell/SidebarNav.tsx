@@ -11,6 +11,7 @@ import {
   FileCheck,
   History,
   LayoutDashboard,
+  ScrollText,
   SlidersHorizontal,
   Table2,
   TriangleAlert,
@@ -34,6 +35,7 @@ const ICONS: Record<IconKey, LucideIcon> = {
   calendar: Calendar,
   rules: SlidersHorizontal,
   noc: FileCheck,
+  audit: ScrollText,
 };
 
 export default function SidebarNav({

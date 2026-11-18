@@ -21,8 +21,8 @@ export default async function RolesPage() {
         <p className="max-w-3xl text-sm text-zinc-600">
           A role is a set of rights. Give a login a role on the Users page and it
           gets exactly these rights, and no more. Changes apply straight away.
-          Leave approval is separate: it follows the person&apos;s designation (DD,
-          CEO, Chairman), not their role.
+          Leave approval is separate: it follows the person&apos;s designation (HOD,
+          DD, Secretary General, Chairperson), not their role.
         </p>
       </div>
 

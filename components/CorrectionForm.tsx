@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { startTransition, useActionState, useState } from "react";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
+import Spinner from "./Spinner";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -16,6 +18,7 @@ const input = "w-full rounded custom-input px-3 py-2 disabled:bg-zinc-100 disabl
 export default function CorrectionForm({ action, id, initialIn, initialOut }: Props) {
   const [state, formAction, pending] = useActionState(action, {} as ActionState);
   const [mode, setMode] = useState<"times" | "absent">("times");
+  useActionToast(state, "Correction saved.");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,6 +28,7 @@ export default function CorrectionForm({ action, id, initialIn, initialOut }: Pr
 
   return (
     <form onSubmit={onSubmit} className="max-w-xl space-y-4 rounded-md shadow-lg  bg-white p-6">
+      {pending && <Spinner />}
       <input type="hidden" name="id" value={id} />
 
       <fieldset className="space-y-2">

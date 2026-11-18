@@ -15,8 +15,8 @@ export default async function NocApprovalsPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">NOC approvals</h1>
         <p className="text-zinc-600">
-          You are not an approver. NOC requests are decided by department DDs
-          and the CEO.
+          You are not an approver. NOC requests are decided by the department
+          head (DD, or the HOD where there is no DD) and the Secretary General.
         </p>
       </div>
     );
@@ -28,8 +28,9 @@ export default async function NocApprovalsPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">NOC approvals</h1>
       <p className="text-sm text-zinc-600">
-        Answer Yes or No. A DD&apos;s Yes sends the request on to the CEO; a No
-        ends it. After the CEO&apos;s Yes, HR issues the NOC.
+        Answer Yes or No. A department head&apos;s Yes sends the request on to the
+        Secretary General; a No ends it. After the Secretary General&apos;s Yes,
+        HR issues the NOC.
       </p>
 
       {requests.length === 0 && (

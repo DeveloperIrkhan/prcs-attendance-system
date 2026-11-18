@@ -4,6 +4,7 @@ import { ServiceError } from "@/lib/action-state";
 import type { AuthUser } from "@/lib/auth/authorization";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { RoleInput } from "@/validations/role.validation";
+import { recordAudit } from "./audit.service";
 
 /** The Admin role always holds every permission, so nobody can lock themselves out. */
 export const ADMIN_ROLE = "ADMIN";
@@ -42,7 +43,7 @@ async function assertNameFree(name: string, exceptId?: string) {
 export async function createRole(input: RoleInput, actor: AuthUser) {
   await assertNameFree(input.name);
   assertCanGrant(actor, input.permissions);
-  return prisma.role.create({
+  const created = await prisma.role.create({
     data: {
       name: input.name,
       description: input.description,
@@ -50,6 +51,19 @@ export async function createRole(input: RoleInput, actor: AuthUser) {
       isSystem: false,
     },
   });
+  await recordAudit({
+    action: "role.create",
+    entity: "Role",
+    entityId: created.id,
+    summary: `Created the role ${created.name}`,
+    after: {
+      name: created.name,
+      description: created.description,
+      permissions: created.permissions,
+    },
+    actor: { id: actor.id, name: actor.fullName },
+  });
+  return created;
 }
 
 export async function updateRole(
@@ -87,7 +101,7 @@ export async function updateRole(
     }
   }
 
-  return prisma.role.update({
+  const updated = await prisma.role.update({
     where: { id },
     data: {
       name: input.name,
@@ -95,6 +109,24 @@ export async function updateRole(
       permissions: input.permissions,
     },
   });
+  await recordAudit({
+    action: "role.update",
+    entity: "Role",
+    entityId: id,
+    summary: `Updated the role ${updated.name}`,
+    before: {
+      name: role.name,
+      description: role.description,
+      permissions: role.permissions,
+    },
+    after: {
+      name: updated.name,
+      description: updated.description,
+      permissions: updated.permissions,
+    },
+    actor: { id: actor.id, name: actor.fullName },
+  });
+  return updated;
 }
 
 export async function deleteRole(id: string) {
@@ -110,5 +142,12 @@ export async function deleteRole(id: string) {
     );
   }
   await prisma.role.delete({ where: { id } });
+  await recordAudit({
+    action: "role.delete",
+    entity: "Role",
+    entityId: id,
+    summary: `Deleted the role ${role.name}`,
+    before: { name: role.name, permissions: role.permissions },
+  });
 }
 

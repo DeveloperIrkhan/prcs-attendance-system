@@ -13,11 +13,12 @@ export const PERMISSIONS = {
   LEAVES_VIEW: "leaves:view", // see every leave request and balance, read only
   LEAVES_REQUEST: "leaves:request", // apply for own leave
   // Approving leave is not a role permission: it follows the designation's approval level
-  // (DD, CEO, Chairman), see lib/leave/approval-routing.ts.
+  // (HOD, DD, Secretary General, Chairperson), see lib/leave/approval-routing.ts.
   // Issuing NOC documents. Applying for a NOC needs no permission: any employee can. Deciding on
-  // one follows the approval level (DD, CEO), like leave. HR and Admin issue the document.
+  // one follows the approval level (HOD, DD, Secretary General), like leave. HR and Admin issue the document.
   NOC_ISSUE: "noc:issue",
   REPORTS_EXPORT: "reports:export",
+  AUDIT_VIEW: "audit:view", // read the change log: who changed rules, employees, users…
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -65,7 +66,7 @@ export const PERMISSION_GROUPS: {
       {
         key: "leaves:view",
         label: "View all leave requests (read only)",
-        hint: "Without this, a DD still sees their own department, and CEO / Chairman see everyone, by designation.",
+        hint: "Without this, a DD or HOD still sees their own department, and the Secretary General / Chairperson see everyone, by designation.",
       },
       { key: "leaves:request", label: "Apply for own leave" },
     ],
@@ -95,6 +96,11 @@ export const PERMISSION_GROUPS: {
     items: [
       { key: "users:manage", label: "Manage users" },
       { key: "roles:manage", label: "Manage roles and permissions" },
+      {
+        key: "audit:view",
+        label: "View the change log",
+        hint: "Who changed the rules, added employees, edited users, decided leave… Admin only.",
+      },
     ],
   },
 ];
@@ -130,7 +136,7 @@ export const SYSTEM_ROLES: {
     ],
   },
   {
-    name: "IT_OFFICER",
+    name: "IT",
     description: "Uploads biometric attendance sheets",
     permissions: [
       P.EMPLOYEES_VIEW,
@@ -187,5 +193,5 @@ export function canIssueNoc(permissions: string[]): boolean {
 
 // ADMIN: sees all dashboard statistics, user management, imports, settings, and reports.
 // HR: sees employee management, attendance, leaves, and reports.
-// IT_OFFICER: sees attendance statistics and Excel import features.
+// IT: sees attendance statistics and Excel import features.
 // EMPLOYEE: sees only personal attendance and personal leave information.

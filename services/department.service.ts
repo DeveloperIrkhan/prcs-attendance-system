@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/action-state";
+import { recordAudit } from "./audit.service";
 
 type DepartmentInput = { name: string; description?: string };
 
@@ -20,9 +21,17 @@ export async function createDepartment(input: DepartmentInput) {
   if (exists)
     throw new ServiceError("A department with this name already exists.");
 
-  return prisma.department.create({
+  const created = await prisma.department.create({
     data: { name: input.name, description: input.description ?? null },
   });
+  await recordAudit({
+    action: "department.create",
+    entity: "Department",
+    entityId: created.id,
+    summary: `Created the department ${created.name}`,
+    after: { name: created.name, description: created.description },
+  });
+  return created;
 }
 
 export async function updateDepartment(id: string, input: DepartmentInput) {
@@ -36,13 +45,30 @@ export async function updateDepartment(id: string, input: DepartmentInput) {
   if (exists)
     throw new ServiceError("A department with this name already exists.");
 
-  return prisma.department.update({
+  const before = await prisma.department.findUnique({
+    where: { id },
+    select: { name: true, description: true },
+  });
+  const updated = await prisma.department.update({
     where: { id },
     data: { name: input.name, description: input.description ?? null },
   });
+  await recordAudit({
+    action: "department.update",
+    entity: "Department",
+    entityId: id,
+    summary: `Updated the department ${updated.name}`,
+    before,
+    after: { name: updated.name, description: updated.description },
+  });
+  return updated;
 }
 
 export async function deleteDepartment(id: string) {
+  const department = await prisma.department.findUnique({
+    where: { id },
+    select: { name: true },
+  });
   const count = await prisma.employee.count({ where: { departmentId: id } });
   if (count > 0) {
     throw new ServiceError(
@@ -50,17 +76,31 @@ export async function deleteDepartment(id: string) {
     );
   }
   await prisma.department.delete({ where: { id } });
+  await recordAudit({
+    action: "department.delete",
+    entity: "Department",
+    entityId: id,
+    summary: `Deleted the department ${department?.name ?? id}`,
+    before: department,
+  });
 }
 
-/** Departments with the DDs who look after them: their own, and additional-charge DDs. */
+/** Departments with the heads who look after them: their DD / HOD, and additional-charge DDs. */
 export function listDepartmentsWithApprovers() {
   return prisma.department.findMany({
     orderBy: { name: "asc" },
     include: {
       _count: { select: { employees: true } },
       employees: {
-        where: { isActive: true, designation: { approvalLevel: "DD" } },
-        select: { id: true, name: true },
+        where: {
+          isActive: true,
+          designation: { approvalLevel: { in: ["DD", "HOD"] } },
+        },
+        select: {
+          id: true,
+          name: true,
+          designation: { select: { approvalLevel: true } },
+        },
         orderBy: { name: "asc" },
       },
       chargeHolders: {
@@ -138,22 +178,44 @@ export async function addDepartmentCharge(
       `${employee.name} already has additional charge of ${department.name}.`,
     );
   }
-  return prisma.departmentCharge.create({ data: { employeeId, departmentId } });
+  const created = await prisma.departmentCharge.create({
+    data: { employeeId, departmentId },
+  });
+  await recordAudit({
+    action: "department.charge-add",
+    entity: "Department",
+    entityId: departmentId,
+    summary: `Gave ${employee.name} additional charge of ${department.name}`,
+    after: { employeeId, departmentId },
+  });
+  return created;
 }
 
 export async function removeDepartmentCharge(id: string) {
   const found = await prisma.departmentCharge.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      departmentId: true,
+      department: { select: { name: true } },
+      employee: { select: { name: true } },
+    },
   });
   if (!found) throw new ServiceError("This additional charge no longer exists.");
   await prisma.departmentCharge.delete({ where: { id } });
+  await recordAudit({
+    action: "department.charge-remove",
+    entity: "Department",
+    entityId: found.departmentId,
+    summary: `Removed ${found.employee.name}'s additional charge of ${found.department.name}`,
+    before: { employee: found.employee.name, department: found.department.name },
+  });
 }
 
 // ---- Acting CEO / Chairman (while the post is vacant) ----
 
 export type ActingLevel = "CEO" | "CHAIRMAN";
-const ACTING_RANK = { STAFF: 0, DD: 1, CEO: 2, CHAIRMAN: 3 } as const;
+const ACTING_RANK = { STAFF: 0, HOD: 1, DD: 2, CEO: 3, CHAIRMAN: 4 } as const;
 
 export function listActingApprovers() {
   return prisma.actingApprover.findMany({
@@ -193,8 +255,9 @@ export function listActingCandidates() {
 
 export async function addActingApprover(employeeId: string, level: ActingLevel) {
   if (level !== "CEO" && level !== "CHAIRMAN") {
-    throw new ServiceError("Choose CEO or Chairman.");
+    throw new ServiceError("Choose Secretary General or Chairperson.");
   }
+  const levelLabel = level === "CEO" ? "Secretary General" : "Chairperson";
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     select: {
@@ -215,7 +278,7 @@ export async function addActingApprover(employeeId: string, level: ActingLevel) 
   const own = employee.designation?.approvalLevel ?? "STAFF";
   if (ACTING_RANK[own] < ACTING_RANK.DD) {
     throw new ServiceError(
-      `${employee.name} is not at DD level. Only a DD or higher can act as ${level === "CEO" ? "CEO" : "Chairman"}.`,
+      `${employee.name} is not at DD level. Only a DD or higher can act as ${levelLabel}.`,
     );
   }
   if (ACTING_RANK[own] >= ACTING_RANK[level]) {
@@ -228,16 +291,39 @@ export async function addActingApprover(employeeId: string, level: ActingLevel) 
     select: { id: true },
   });
   if (exists) {
-    throw new ServiceError(`${employee.name} is already acting as ${level === "CEO" ? "CEO" : "Chairman"}.`);
+    throw new ServiceError(`${employee.name} is already acting as ${levelLabel}.`);
   }
-  return prisma.actingApprover.create({ data: { employeeId, level } });
+  const created = await prisma.actingApprover.create({
+    data: { employeeId, level },
+  });
+  await recordAudit({
+    action: "department.acting-add",
+    entity: "ActingApprover",
+    entityId: created.id,
+    summary: `Made ${employee.name} acting ${levelLabel}`,
+    after: { employee: employee.name, level },
+  });
+  return created;
 }
 
 export async function removeActingApprover(id: string) {
   const found = await prisma.actingApprover.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      level: true,
+      employee: { select: { name: true } },
+    },
   });
   if (!found) throw new ServiceError("This acting role no longer exists.");
   await prisma.actingApprover.delete({ where: { id } });
+  await recordAudit({
+    action: "department.acting-remove",
+    entity: "ActingApprover",
+    entityId: id,
+    summary: `Removed ${found.employee.name} as acting ${
+      found.level === "CEO" ? "Secretary General" : "Chairperson"
+    }`,
+    before: { employee: found.employee.name, level: found.level },
+  });
 }

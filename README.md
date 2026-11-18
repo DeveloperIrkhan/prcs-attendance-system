@@ -95,7 +95,7 @@ password is rejected immediately, including Admin password resets and the seeded
 
 Two independent layers decide what a person sees:
 
-1. **Role permissions** (`lib/auth/permissions.ts`) – `ADMIN`, `HR`, `IT_OFFICER`, `EMPLOYEE`,
+1. **Role permissions** (`lib/auth/permissions.ts`) – `ADMIN`, `HR`, `IT`, `EMPLOYEE`,
    editable on the Roles page. Admin always holds every permission defined in code.
 2. **Designation approval level** (`STAFF → DD → CEO → CHAIRMAN`, `lib/leave/approval-routing.ts`) –
    drives leave/NOC approval routing and, together with the role, the data scope.

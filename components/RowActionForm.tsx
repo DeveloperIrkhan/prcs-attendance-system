@@ -1,7 +1,9 @@
 "use client";
 
 import { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
 import { startTransition, useActionState } from "react";
+import InlineSpinner from "./InlineSpinner";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -21,6 +23,7 @@ export default function RowActionForm({
   danger,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, {} as ActionState);
+  useActionToast(state, `${label}: done.`);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,7 +45,7 @@ export default function RowActionForm({
           danger ? "border-red-300 text-red-700 hover:bg-red-50" : "hover:bg-zinc-100"
         }`}
       >
-        {pending ? "..." : label}
+        {pending ? <InlineSpinner className="h-3 w-3" /> : label}
       </button>
       {state.error && (
         <span className="ml-2 text-xs text-red-600">{state.error}</span>

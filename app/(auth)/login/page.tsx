@@ -36,19 +36,21 @@ export default function LoginPage() {
         setError(
           `Login failed (server error ${res.status}). Check the deployment logs.`,
         );
+        toast.error(`Login failed (server error ${res.status}).`);
         return;
       }
       if (!res.ok) {
         setError(data.error ?? "Login failed");
-        toast.error(data.error ?? "login fails!");
+        toast.error(data.error ?? "Login failed.");
         return;
       }
-      toast.success("login successfull!");
+      toast.success("Signed in.");
       console.log("Login successful:", data.redirectTo);
       router.replace(data.redirectTo ?? "/Dashboard");
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
     }

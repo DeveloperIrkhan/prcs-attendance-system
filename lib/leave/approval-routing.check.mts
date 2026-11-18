@@ -22,6 +22,16 @@ assert.equal(level("CEO", 10), "CHAIRMAN");
 assert.equal(level("CHAIRMAN", 1), null);
 assert.deepEqual(levelsAbove("DD"), ["CEO", "CHAIRMAN"]);
 assert.deepEqual(levelsAbove("CHAIRMAN"), []);
+assert.deepEqual(levelsAbove("HOD"), ["DD", "CEO", "CHAIRMAN"]);
+
+// HOD: the head of a department that has no DD. Short staff leave is routed to the
+// department level (sameDepartment), which the service then fills with the HOD when there
+// is no DD; long leave goes to the Secretary General.
+assert.equal(level("HOD", 1), "DD");
+assert.equal(level("HOD", 3), "DD");
+assert.equal(route("HOD", 2).sameDepartment, true);
+assert.equal(level("HOD", 4), "CEO");
+assert.equal(route("HOD", 4).sameDepartment, false);
 
 // Who may decide
 const ddReq = {
@@ -93,6 +103,50 @@ assert.equal(
   false,
 ); // still never their own request
 
+// HOD-routed requests: the HOD of that department, and anyone above them.
+const hodReq = {
+  employeeId: "e1",
+  approverLevel: "HOD" as const,
+  approverDepartmentId: "d1",
+};
+assert.equal(
+  can({ employeeId: "x", departmentId: "d1", level: "HOD" }, hodReq),
+  true,
+);
+assert.equal(
+  can({ employeeId: "x", departmentId: "d2", level: "HOD" }, hodReq),
+  false,
+); // HOD of another department
+assert.equal(
+  can({ employeeId: "e1", departmentId: "d1", level: "HOD" }, hodReq),
+  false,
+); // own request
+assert.equal(
+  can({ employeeId: "x", departmentId: "d1", level: "DD" }, hodReq),
+  true,
+); // DD above the HOD, same department
+assert.equal(
+  can({ employeeId: "x", departmentId: "d2", level: "DD" }, hodReq),
+  false,
+); // DD of another department
+assert.equal(
+  can({ employeeId: "x", departmentId: "d9", level: "CEO" }, hodReq),
+  true,
+); // parent rights
+assert.equal(
+  can({ employeeId: "x", departmentId: "d9", level: "CHAIRMAN" }, hodReq),
+  true,
+); // parent rights
+assert.equal(
+  can({ employeeId: "x", departmentId: "d1", level: "STAFF" }, hodReq),
+  false,
+);
+// An HOD is below a DD, so it cannot decide a request routed to the DD.
+assert.equal(
+  can({ employeeId: "x", departmentId: "d1", level: "HOD" }, ddReq),
+  false,
+);
+
 const ceoReq = {
   employeeId: "e1",
   approverLevel: "CEO" as const,
@@ -142,6 +196,8 @@ assert.equal(
 assert.equal(highestLevel(["DD", "CEO"]), "CEO");
 assert.equal(highestLevel(["STAFF"]), "STAFF");
 assert.equal(highestLevel(["CEO", "DD", "STAFF"]), "CEO");
+assert.equal(highestLevel(["HOD", "DD"]), "DD");
+assert.equal(highestLevel(["HOD"]), "HOD");
 const actingCeoReq = {
   employeeId: "e9",
   approverLevel: "CEO" as const,

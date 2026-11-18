@@ -1,22 +1,31 @@
 // NOC (No Objection Certificate) requests.
 //
-//   Employee  ->  Department DD  ->  CEO (acting CEO) says Yes or No  ->  HR / Admin issue the NOC
+//   Employee  ->  Department DD (or the HOD when the department has no DD)
+//             ->  Secretary General (acting Secretary General) says Yes or No
+//             ->  HR / Admin issue the NOC
 //
-// Pure functions, no database, so the rules are easy to test. Who counts as "the department DD"
-// or "the CEO" is worked out by the service (it already knows additional charge and acting CEO).
+// Pure functions, no database, so the rules are easy to test. Who counts as "the department
+// DD" / "the HOD" or "the Secretary General" is worked out by the service (it already knows
+// additional charge and acting Secretary General).
 
-type Level = "STAFF" | "DD" | "CEO" | "CHAIRMAN";
-const RANK: Record<Level, number> = { STAFF: 0, DD: 1, CEO: 2, CHAIRMAN: 3 };
+type Level = "STAFF" | "HOD" | "DD" | "CEO" | "CHAIRMAN";
+const RANK: Record<Level, number> = {
+  STAFF: 0,
+  HOD: 1,
+  DD: 2,
+  CEO: 3,
+  CHAIRMAN: 4,
+};
 
 export type NocStatus =
-  | "PENDING_DD" // waiting for the department DD
-  | "PENDING_FINAL" // waiting for the CEO (or the Chairman, for a CEO's own request)
+  | "PENDING_DD" // waiting for the department head (DD, or the HOD when there is no DD)
+  | "PENDING_FINAL" // waiting for the Secretary General (or the Chairperson, for their own request)
   | "APPROVED" // the yes/no was Yes: HR / Admin now upload the NOC document
   | "ISSUED" // the document was uploaded
   | "REJECTED"
   | "CANCELLED";
 
-export type NocApproverLevel = "DD" | "CEO" | "CHAIRMAN";
+export type NocApproverLevel = "HOD" | "DD" | "CEO" | "CHAIRMAN";
 
 export const NOC_CATEGORIES = [
   "Visa / travel",
@@ -32,14 +41,16 @@ export function parseNocCategory(value: string | undefined | null): string {
 
 /**
  * Where a new request starts.
- *   staff                      -> their department DD, or the CEO if the department has none
- *   a DD                       -> the CEO
- *   the CEO                    -> the Chairman
- *   the Chairman               -> nobody above: straight to HR / Admin to issue
+ *   staff                      -> their department DD, or the HOD when there is no DD,
+ *                                 or the Secretary General when there is neither
+ *   an HOD or a DD             -> the Secretary General
+ *   the Secretary General      -> the Chairperson
+ *   the Chairperson            -> nobody above: straight to HR / Admin to issue
  */
 export function startNocRoute(i: {
   requesterLevel: Level;
   hasDepartmentDd: boolean;
+  hasDepartmentHod?: boolean;
 }): {
   status: "PENDING_DD" | "PENDING_FINAL" | "APPROVED";
   approverLevel: NocApproverLevel | null;
@@ -50,11 +61,14 @@ export function startNocRoute(i: {
     case "CEO":
       return { status: "PENDING_FINAL", approverLevel: "CHAIRMAN" };
     case "DD":
+    case "HOD":
       return { status: "PENDING_FINAL", approverLevel: "CEO" };
     default:
-      return i.hasDepartmentDd
-        ? { status: "PENDING_DD", approverLevel: "DD" }
-        : { status: "PENDING_FINAL", approverLevel: "CEO" };
+      if (i.hasDepartmentDd)
+        return { status: "PENDING_DD", approverLevel: "DD" };
+      if (i.hasDepartmentHod)
+        return { status: "PENDING_DD", approverLevel: "HOD" };
+      return { status: "PENDING_FINAL", approverLevel: "CEO" };
   }
 }
 
@@ -66,9 +80,9 @@ export type NocDecisionResult =
       next: {
         status: NocStatus;
         approverLevel: NocApproverLevel | null;
-        /** the DD step is filled in with this decision */
+        /** the DD / HOD step is filled in with this decision */
         recordsDd: boolean;
-        /** the CEO / final step is filled in with this decision */
+        /** the Secretary General / final step is filled in with this decision */
         recordsFinal: boolean;
         rejectedStage: "DD" | "FINAL" | null;
       };
@@ -77,15 +91,15 @@ export type NocDecisionResult =
 
 /**
  * What a decision does. `isDesignatedApprover` is the service's answer to "may this person decide
- * at the level the request is waiting for?" (the department DD, a DD with additional charge for
- * it, or someone higher such as the CEO or the acting CEO).
+ * at the level the request is waiting for?" (the department DD or HOD, a DD with additional
+ * charge for it, or someone higher such as the Secretary General or the acting one).
  */
 export function checkNocDecision(i: {
   status: NocStatus;
   decision: NocDecision;
   isDesignatedApprover: boolean;
   isOwnRequest: boolean;
-  /** the level the person decides at (an acting CEO counts as CEO) */
+  /** the level the person decides at (an acting Secretary General counts as CEO) */
   deciderLevel: Level;
 }): NocDecisionResult {
   const waiting = i.status === "PENDING_DD" || i.status === "PENDING_FINAL";
@@ -135,8 +149,9 @@ export function checkNocDecision(i: {
       next: { status: "APPROVED", approverLevel: null, recordsDd: false, recordsFinal: true, rejectedStage: null },
     };
   }
-  // The DD says yes: on to the CEO. If the CEO (or higher) said yes at the DD step, that is the
-  // final yes already: the CEO is not asked twice.
+  // The department head says yes: on to the Secretary General. If the Secretary General (or
+  // higher) said yes at the department-head step, that is the final yes already: they are
+  // not asked twice.
   if (RANK[i.deciderLevel] >= RANK.CEO) {
     return {
       ok: true,
@@ -156,11 +171,13 @@ export function nocStatusLabel(
 ): string {
   switch (status) {
     case "PENDING_DD":
-      return "Waiting for the department DD";
+      return approverLevel === "HOD"
+        ? "Waiting for the department HOD"
+        : "Waiting for the department DD";
     case "PENDING_FINAL":
       return approverLevel === "CHAIRMAN"
-        ? "Waiting for the Chairman"
-        : "Waiting for the CEO";
+        ? "Waiting for the Chairperson"
+        : "Waiting for the Secretary General";
     case "APPROVED":
       return "Approved: waiting for HR to issue the NOC";
     case "ISSUED":

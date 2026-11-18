@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import Spinner from "../../../components/Spinner";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -24,12 +26,15 @@ export default function ChangePasswordPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Could not change password");
+        toast.error(data.error ?? "Could not change password");
         return;
       }
+      toast.success("Password changed.");
       router.replace("/home");
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -39,6 +44,7 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
+      {loading && <Spinner />}
       <form
         onSubmit={onSubmit}
         className="w-full max-w-sm space-y-4 rounded-lg bg-white p-6 shadow-sm"

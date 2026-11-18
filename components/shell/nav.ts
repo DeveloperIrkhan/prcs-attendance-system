@@ -14,7 +14,8 @@ export type IconKey =
   | "history"
   | "calendar"
   | "rules"
-  | "noc";
+  | "noc"
+  | "audit";
 
 export type NavItem = { href: string; label: string; icon: IconKey };
 export type NavSection = { title: string; items: NavItem[] };
@@ -201,6 +202,12 @@ export function buildNav(
             label: "Users",
             icon: "employees",
             show: can(P.USERS_MANAGE),
+          },
+          {
+            href: "/audit",
+            label: "Change log",
+            icon: "audit",
+            show: can(P.AUDIT_VIEW),
           },
         ],
       },

@@ -2,6 +2,8 @@
 
 import { startTransition, useActionState } from "react";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
+import InlineSpinner from "./InlineSpinner";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -13,6 +15,7 @@ type Props = {
 /** Yes or No on a NOC request, with an optional note kept with the answer. */
 export default function NocDecisionForm({ action, id, who }: Props) {
   const [state, formAction, pending] = useActionState(action, {} as ActionState);
+  useActionToast(state, "Decision saved.");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,7 +43,7 @@ export default function NocDecisionForm({ action, id, who }: Props) {
         disabled={pending}
         className="rounded border border-red-800 bg-red-800 px-3 py-1 text-sm text-white hover:bg-white hover:text-red-800 disabled:opacity-50"
       >
-        Yes
+        {pending ? <InlineSpinner className="h-4 w-4" /> : "Yes"}
       </button>
       <button
         type="submit"
@@ -49,7 +52,7 @@ export default function NocDecisionForm({ action, id, who }: Props) {
         disabled={pending}
         className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
       >
-        No
+        {pending ? <InlineSpinner className="h-4 w-4" /> : "No"}
       </button>
       {state.error && <span className="basis-full text-xs text-red-600">{state.error}</span>}
     </form>

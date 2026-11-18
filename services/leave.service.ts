@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/action-state";
-import type { LeaveRequestStatus } from "@/lib/generated/prisma/client";
+import type { LeaveRequestStatus, Prisma } from "@/lib/generated/prisma/client";
 import {
   getApproverIdentity,
   hasPermission,
@@ -11,8 +11,10 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { employeeWhereFor, type DataScope } from "@/lib/auth/data-scope";
 import {
   APPROVER_LABEL,
+  APPROVER_LEVELS,
   SHORT_ROUTE_MAX_DAYS,
   canDecideRequest,
+  isDepartmentHeadLevel,
   levelsAbove,
   resolveApprovalRoute,
   type ApprovalLevel,
@@ -26,6 +28,7 @@ import type {
 } from "@/validations/leave.validation";
 import { reprocessEmployeeRange } from "./attendance.service";
 import { getMonthCalendar, makeDayTypeResolver } from "./settings.service";
+import { recordAudit } from "./audit.service";
 import { syncLeaveToAttendance } from "./leave-attendance.service";
 
 const yearRange = (year: number) => ({
@@ -47,13 +50,25 @@ export async function createLeaveType(input: LeaveTypeInput) {
   });
   if (exists)
     throw new ServiceError("A leave type with this name already exists.");
-  return prisma.leaveType.create({
+  const created = await prisma.leaveType.create({
     data: {
       name: input.name,
       isPaid: input.isPaid,
       yearlyQuotaDays: input.yearlyQuotaDays,
     },
   });
+  await recordAudit({
+    action: "leave-type.create",
+    entity: "LeaveType",
+    entityId: created.id,
+    summary: `Created the leave type ${created.name}`,
+    after: {
+      name: created.name,
+      isPaid: created.isPaid,
+      yearlyQuotaDays: created.yearlyQuotaDays,
+    },
+  });
+  return created;
 }
 
 export async function updateLeaveType(id: string, input: LeaveTypeInput) {
@@ -63,7 +78,11 @@ export async function updateLeaveType(id: string, input: LeaveTypeInput) {
   });
   if (exists)
     throw new ServiceError("A leave type with this name already exists.");
-  return prisma.leaveType.update({
+  const before = await prisma.leaveType.findUnique({
+    where: { id },
+    select: { name: true, isPaid: true, yearlyQuotaDays: true },
+  });
+  const updated = await prisma.leaveType.update({
     where: { id },
     data: {
       name: input.name,
@@ -71,10 +90,35 @@ export async function updateLeaveType(id: string, input: LeaveTypeInput) {
       yearlyQuotaDays: input.yearlyQuotaDays,
     },
   });
+  await recordAudit({
+    action: "leave-type.update",
+    entity: "LeaveType",
+    entityId: id,
+    summary: `Updated the leave type ${updated.name}`,
+    before,
+    after: {
+      name: updated.name,
+      isPaid: updated.isPaid,
+      yearlyQuotaDays: updated.yearlyQuotaDays,
+    },
+  });
+  return updated;
 }
 
-export function setLeaveTypeActive(id: string, isActive: boolean) {
-  return prisma.leaveType.update({ where: { id }, data: { isActive } });
+export async function setLeaveTypeActive(id: string, isActive: boolean) {
+  const updated = await prisma.leaveType.update({
+    where: { id },
+    data: { isActive },
+  });
+  await recordAudit({
+    action: isActive ? "leave-type.activate" : "leave-type.deactivate",
+    entity: "LeaveType",
+    entityId: id,
+    summary: `${isActive ? "Reactivated" : "Deactivated"} the leave type ${updated.name}`,
+    before: { isActive: !isActive },
+    after: { isActive },
+  });
+  return updated;
 }
 
 export function listEmployeeOptions() {
@@ -180,8 +224,9 @@ async function hasActiveApprover(
       OR: [
         {
           designation: { approvalLevel: level },
-          // a DD counts inside their own department and where they hold additional charge
-          ...(level === "DD" && opts.departmentId
+          // a department head counts inside their own department and where they hold
+          // additional charge
+          ...((level === "DD" || level === "HOD") && opts.departmentId
             ? {
                 OR: [
                   { departmentId: opts.departmentId },
@@ -208,29 +253,30 @@ async function hasActiveApprover(
 
 /**
  * Says exactly why nobody can approve, so HR knows what to fix.
- * A short request from staff (AD, SO...) needs an active DD, with a login, in the
- * SAME department. Only when there is none does it go to the CEO, so a "no CEO" error
- * usually hides the real problem: the department has no usable DD.
+ * A short request from staff (AD, SO...) needs a department head, with a login, in the
+ * SAME department: its DD, or its HOD when the department has no DD. Only when there is
+ * neither does it go to the Secretary General, so a "no Secretary General" error usually
+ * hides the real problem: the department has no usable head.
  */
 async function explainMissingApprover(opts: {
   requesterId: string;
   departmentId: string;
   approverLevel: ApproverLevel;
-  /** true when this was a short staff request that looked for a department DD first */
+  /** true when this was a short staff request that looked for a department head first */
   escalatedFromDd: boolean;
   days: number;
 }): Promise<string> {
   const generic = `No active ${APPROVER_LABEL[opts.approverLevel]} login exists for this request. Set the approval level on the designation and make sure that employee is active. If the post is vacant, an acting ${APPROVER_LABEL[opts.approverLevel]} can be set on the Departments page.`;
 
   if (opts.approverLevel !== "CEO" || !opts.escalatedFromDd) {
-    // e.g. a long request from staff goes straight to the CEO, by rule
+    // e.g. a long request from staff goes straight to the Secretary General, by rule
     if (opts.approverLevel === "CEO" && opts.days > SHORT_ROUTE_MAX_DAYS) {
-      return `This request is ${opts.days} working days. Requests of more than ${SHORT_ROUTE_MAX_DAYS} working days from staff go to the CEO, and no active CEO login exists. ${generic}`;
+      return `This request is ${opts.days} working days. Requests of more than ${SHORT_ROUTE_MAX_DAYS} working days from staff go to the Secretary General, and no active Secretary General login exists. ${generic}`;
     }
     return generic;
   }
 
-  const [department, ddsHere, ddsElsewhere] = await Promise.all([
+  const [department, ddsHere, hodsHere, headsElsewhere] = await Promise.all([
     prisma.department.findUnique({
       where: { id: opts.departmentId },
       select: { name: true },
@@ -252,38 +298,60 @@ async function explainMissingApprover(opts: {
     }),
     prisma.employee.findMany({
       where: {
+        id: { not: opts.requesterId },
+        designation: { approvalLevel: "HOD" },
+        departmentId: opts.departmentId,
+      },
+      select: {
+        name: true,
+        isActive: true,
+        user: { select: { isActive: true } },
+      },
+    }),
+    prisma.employee.findMany({
+      where: {
         departmentId: { not: opts.departmentId },
         additionalCharges: { none: { departmentId: opts.departmentId } },
         isActive: true,
         user: { is: { isActive: true } },
-        designation: { approvalLevel: "DD" },
+        designation: { approvalLevel: { in: ["DD", "HOD"] } },
       },
-      select: { name: true, department: { select: { name: true } } },
+      select: {
+        name: true,
+        designation: { select: { approvalLevel: true } },
+        department: { select: { name: true } },
+      },
       take: 3,
     }),
   ]);
 
   const dept = department?.name ?? "this department";
-  const lead = `This request goes to the DD of ${dept}, but no DD there can approve it`;
-  let reason: string;
-  if (ddsHere.length === 0) {
-    reason = `no employee in ${dept} has a designation with approval level "DD", and no DD has been given additional charge of it (Departments page, "Additional charge")`;
-  } else {
-    const problems = ddsHere.map((d) =>
-      !d.isActive
-        ? `${d.name} is inactive`
-        : !d.user
-          ? `${d.name} has no login`
-          : `${d.name}'s login is deactivated`,
+  const lead = `This request goes to the department head of ${dept}, but no DD or HOD there can approve it`;
+  const problems: string[] = [];
+  if (ddsHere.length === 0 && hodsHere.length === 0) {
+    problems.push(
+      `no employee in ${dept} has a designation with approval level "DD" or "HOD", and no DD has been given additional charge of it (Departments page, "Additional charge")`,
     );
-    reason = problems.join("; ");
+  } else {
+    for (const d of [...ddsHere, ...hodsHere]) {
+      problems.push(
+        !d.isActive
+          ? `${d.name} is inactive`
+          : !d.user
+            ? `${d.name} has no login`
+            : `${d.name}'s login is deactivated`,
+      );
+    }
   }
-  const elsewhere = ddsElsewhere.length
-    ? ` A DD only decides for their own department or one they hold additional charge of. Found DD(s) in other departments: ${ddsElsewhere
-        .map((d) => `${d.name} (${d.department.name})`)
+  const elsewhere = headsElsewhere.length
+    ? ` A department head only decides for their own department or one they hold additional charge of. Found heads in other departments: ${headsElsewhere
+        .map(
+          (d) =>
+            `${d.name} (${d.designation?.approvalLevel ?? "?"}, ${d.department.name})`,
+        )
         .join(", ")}.`
     : "";
-  return `${lead}: ${reason}.${elsewhere} It could not be sent to the CEO either, because no active CEO, Chairman or acting CEO login exists (set an acting CEO on the Departments page).`;
+  return `${lead}: ${problems.join("; ")}.${elsewhere} It could not be sent to the Secretary General either, because no active Secretary General, Chairperson or acting Secretary General login exists (set an acting Secretary General on the Departments page).`;
 }
 
 type RoutePlan = {
@@ -311,9 +379,9 @@ async function planRoute(
   let routeNote: string | null = null;
 
   if (route.sameDepartment) {
-    // Only a DD of this department may decide a short request. That is the department's own
-    // DD, or a DD of another department who holds additional charge of it (departments
-    // without a DD of their own). If there is nobody, escalate.
+    // Only a department head of this department may decide a short request: its own DD, a
+    // DD of another department who holds additional charge of it, or its HOD when the
+    // department has no DD. If there is nobody, escalate to the Secretary General.
     const ownDd = await prisma.employee.findFirst({
       where: {
         id: { not: employee.id },
@@ -331,16 +399,39 @@ async function planRoute(
     });
     if (ownDd) {
       approverDepartmentId = employee.departmentId;
+    } else if (requesterLevel === "STAFF") {
+      // No DD: the department's HOD is its head. (An HOD's own leave never goes to a
+      // fellow HOD; it goes to the Secretary General below.)
+      const ownHod = await prisma.employee.findFirst({
+        where: {
+          id: { not: employee.id },
+          isActive: true,
+          designation: { approvalLevel: "HOD" },
+          user: { is: { isActive: true } },
+          departmentId: employee.departmentId,
+        },
+        select: { id: true },
+      });
+      if (ownHod) {
+        approverLevel = "HOD";
+        approverDepartmentId = employee.departmentId;
+        routeNote = "No DD in department, sent to the HOD";
+      } else {
+        approverLevel = "CEO";
+        routeNote =
+          "No DD or HOD in department, sent to the Secretary General";
+      }
     } else {
       approverLevel = "CEO";
-      routeNote =
-        "No active DD (or additional-charge DD) for this department, sent to the CEO";
+      routeNote = "No DD in department, sent to the Secretary General";
     }
   }
 
   const exists = await hasActiveApprover(approverLevel, {
     excludeEmployeeId: employee.id,
-    ...(approverLevel === "DD" ? { departmentId: approverDepartmentId! } : {}),
+    ...(approverLevel === "DD" || approverLevel === "HOD"
+      ? { departmentId: approverDepartmentId! }
+      : {}),
   });
   if (!exists) {
     throw new ServiceError(
@@ -379,6 +470,8 @@ export async function createLeaveRequest(
       where: { id: employeeId },
       select: {
         id: true,
+        name: true,
+        employeeCode: true,
         isActive: true,
         departmentId: true,
         designation: { select: { approvalLevel: true } },
@@ -417,11 +510,11 @@ export async function createLeaveRequest(
   // ---- Who approves?
   const plan = await planRoute(employee, days);
 
-  // The Chairman has nobody above them: an Admin records the leave as approved.
+  // The Chairperson has nobody above them: an Admin records the leave as approved.
   if (plan === "ADMIN_RECORDS") {
     if (!hasPermission(user, PERMISSIONS.USERS_MANAGE)) {
       throw new ServiceError(
-        "The Chairman's leave has no approver in the system. Ask an Admin to record it.",
+        "The Chairperson's leave has no approver in the system. Ask an Admin to record it.",
       );
     }
     const recorded = await prisma.leaveRequest.create({
@@ -436,11 +529,26 @@ export async function createLeaveRequest(
         decidedById: user.id,
         decidedAt: new Date(),
         requestedById: user.id,
-        routeNote: "Recorded by Admin (Chairman)",
+        routeNote: "Recorded by Admin (Chairperson)",
       },
     });
     await reprocessEmployeeRange(employee.id, start, end);
     await showLeaveInAttendance(employee.id, start, end);
+    await recordAudit({
+      action: "leave.record",
+      entity: "LeaveRequest",
+      entityId: recorded.id,
+      summary: `Recorded approved leave for ${employee.name} (${input.startDate} to ${input.endDate})`,
+      after: {
+        employee: employee.name,
+        leaveType: leaveType.name,
+        start: input.startDate,
+        end: input.endDate,
+        days,
+        status: "APPROVED",
+      },
+      actor: { id: user.id, name: user.fullName },
+    });
     return recorded;
   }
 
@@ -486,7 +594,7 @@ export async function rerouteUnroutedRequests() {
       const days = await countWorkingDays(request.startDate, request.endDate);
       const plan = await planRoute(request.employee, days);
       if (plan === "ADMIN_RECORDS") {
-        failed.push(`${request.id}: Chairman's leave must be recorded by an Admin`);
+        failed.push(`${request.id}: Chairperson's leave must be recorded by an Admin`);
         continue;
       }
       await prisma.leaveRequest.update({
@@ -518,7 +626,10 @@ export async function decideLeaveRequest(
 ) {
   const request = await prisma.leaveRequest.findUnique({
     where: { id },
-    include: { leaveType: true },
+    include: {
+      leaveType: true,
+      employee: { select: { name: true, employeeCode: true } },
+    },
   });
   if (!request) throw new ServiceError("Leave request not found.");
 
@@ -613,6 +724,21 @@ export async function decideLeaveRequest(
       request.endDate,
     );
   }
+  const verb =
+    decision === "APPROVED"
+      ? "Approved"
+      : decision === "REJECTED"
+        ? "Rejected"
+        : "Cancelled";
+  await recordAudit({
+    action: `leave.${decision.toLowerCase()}`,
+    entity: "LeaveRequest",
+    entityId: id,
+    summary: `${verb} ${days} day(s) of ${request.leaveType.name} for ${request.employee.name} (${request.startDate.toISOString().slice(0, 10)} to ${request.endDate.toISOString().slice(0, 10)})`,
+    before: { status: previousStatus, days: request.days },
+    after: { status: decision, days },
+    actor: { id: user.id, name: user.fullName },
+  });
   return updated;
 }
 
@@ -629,33 +755,48 @@ const requestInclude = {
 
 /**
  * Requests waiting for this person to decide: those routed to their own level
- * (a DD only sees their department) and, by parent rights, those routed to any lower level.
- * Empty unless they are DD, CEO or Chairman.
+ * (a DD / HOD only sees their department) and, by parent rights, those routed to any
+ * lower level. Empty unless they are HOD, DD, Secretary General or Chairperson.
  */
 export async function listPendingForApprover(user: AuthUser) {
   const me = getApproverIdentity(user);
   if (!me || me.level === "STAFF") return [];
 
-  const lowerLevels = (["DD", "CEO", "CHAIRMAN"] as const).filter(
-    (l) => l !== me.level && levelsAbove(l).includes(me.level as ApproverLevel),
-  );
+  const departmentIds = [
+    me.departmentId,
+    ...(me.chargeDepartmentIds ?? []),
+  ];
+  const or: Prisma.LeaveRequestWhereInput[] = [];
+
+  // Requests waiting at this person's own level.
+  if (isDepartmentHeadLevel(me.level)) {
+    or.push({
+      approverLevel: me.level,
+      approverDepartmentId: { in: departmentIds },
+    });
+  } else {
+    or.push({ approverLevel: me.level });
+  }
+
+  // Parent rights over every lower level. A department head only sees the lower
+  // department-level requests of their own departments.
+  for (const lower of APPROVER_LEVELS) {
+    if (!levelsAbove(lower).includes(me.level as ApproverLevel)) continue;
+    if (isDepartmentHeadLevel(lower) && isDepartmentHeadLevel(me.level)) {
+      or.push({
+        approverLevel: lower,
+        approverDepartmentId: { in: departmentIds },
+      });
+    } else {
+      or.push({ approverLevel: lower });
+    }
+  }
+
   return prisma.leaveRequest.findMany({
     where: {
       status: "PENDING",
       employeeId: { not: me.employeeId },
-      OR: [
-        me.level === "DD"
-          ? {
-              approverLevel: "DD",
-              approverDepartmentId: {
-                in: [me.departmentId, ...(me.chargeDepartmentIds ?? [])],
-              },
-            }
-          : { approverLevel: me.level },
-        ...(lowerLevels.length
-          ? [{ approverLevel: { in: lowerLevels } }]
-          : []),
-      ],
+      OR: or,
     },
     orderBy: { startDate: "asc" },
     take: 200,

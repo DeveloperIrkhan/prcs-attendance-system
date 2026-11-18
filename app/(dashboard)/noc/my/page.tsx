@@ -83,14 +83,14 @@ export default async function MyNocPage() {
                   {r.finalName && (
                     <div>
                       {r.status === "REJECTED" && r.rejectedStage === "FINAL"
-                        ? "CEO said No: "
-                        : "CEO: "}
+                        ? "Secretary General said No: "
+                        : "Secretary General: "}
                       {r.finalName}
                       {r.finalNote && <span className="text-zinc-500"> ({r.finalNote})</span>}
                     </div>
                   )}
                   {r.status === "REJECTED" && r.rejectedStage === "DD" && r.ddName && (
-                    <div className="text-red-700">The DD said No.</div>
+                    <div className="text-red-700">The department head said No.</div>
                   )}
                   {r.issuedName && <div>Issued by {r.issuedName}</div>}
                 </td>

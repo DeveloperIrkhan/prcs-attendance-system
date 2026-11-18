@@ -26,7 +26,7 @@ assert.deepEqual(scope({ ...base, permissions: ["leaves:manage"], level: "DD" })
 assert.deepEqual(scope({ ...base, level: "CEO" }), { kind: "ALL" });
 assert.deepEqual(scope({ ...base, level: "CHAIRMAN" }), { kind: "ALL" });
 
-// IT officer: sees attendance of everyone, but NOT leave requests
+// IT role: sees attendance of everyone, but NOT leave requests
 assert.equal(
   scope({ ...base, permissions: ["attendance:view", "attendance:import"], level: "STAFF" }),
   null,

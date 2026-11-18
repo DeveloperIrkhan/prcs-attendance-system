@@ -24,7 +24,7 @@ export default async function ReportsPage({
 }: {
   searchParams: SearchParams;
 }) {
-  // HR, IT Officer, Admin, CEO, Chairman: whole organization. DD: own department only.
+  // HR, IT, Admin, CEO, Chairman: whole organization. DD: own department only.
   const { user, scope } = await requireScope();
   const sp = await searchParams;
   const params = parseReportParams((k) => sp[k]);

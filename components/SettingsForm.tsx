@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState } from "react";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
 import Spinner from "./Spinner";
 
 export type SettingsValues = {
@@ -13,6 +14,7 @@ export type SettingsValues = {
   earliestPunch: string;
   latestPunch: string;
   overtimeMinMinutes: number;
+  overtimeStartAfterMinutes: number;
   offDayWorkIsOvertime: boolean;
   defaultWeeklyOffDays: number[];
   shortLeaveMaxMinutes: number;
@@ -63,6 +65,7 @@ export default function SettingsForm({
     action,
     {} as ActionState,
   );
+  useActionToast(state, "Settings saved.");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -216,7 +219,7 @@ export default function SettingsForm({
         </Field>
         <Field
           label="Minimum overtime (minutes)"
-          hint="Time after shift end counts as overtime only if it reaches this. 0 counts every minute."
+          hint="Time after the overtime buffer counts as overtime only if it reaches this. 0 counts every minute."
         >
           <input
             type="number"
@@ -224,6 +227,20 @@ export default function SettingsForm({
             min={0}
             max={480}
             defaultValue={values.overtimeMinMinutes}
+            required
+            className={input}
+          />
+        </Field>
+        <Field
+          label="Overtime buffer after shift end (minutes)"
+          hint="The first minutes after the shift end are not overtime. With a 5:00 PM shift end and 60 here, overtime starts at 6:00 PM."
+        >
+          <input
+            type="number"
+            name="overtimeStartAfterMinutes"
+            min={0}
+            max={240}
+            defaultValue={values.overtimeStartAfterMinutes}
             required
             className={input}
           />

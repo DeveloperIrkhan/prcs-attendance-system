@@ -41,6 +41,12 @@ export default async function AttendanceSettingsPage() {
               </span>
             </li>
             <li>
+              Overtime Starts After:{" "}
+              <span className="font-semibold ml-2">
+                {s.overtimeStartAfterMinutes} minutes after the shift end
+              </span>
+            </li>
+            <li>
               Grace Period:{" "}
               <span className="font-semibold ml-2">
                 {s.graceMinutes} minutes
@@ -89,6 +95,7 @@ export default async function AttendanceSettingsPage() {
             earliestPunch: s.earliestPunch,
             latestPunch: s.latestPunch,
             overtimeMinMinutes: s.overtimeMinMinutes,
+            overtimeStartAfterMinutes: s.overtimeStartAfterMinutes,
             offDayWorkIsOvertime: s.offDayWorkIsOvertime,
             defaultWeeklyOffDays: s.defaultWeeklyOffDays,
             shortLeaveMaxMinutes: s.shortLeaveMaxMinutes,

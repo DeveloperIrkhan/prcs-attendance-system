@@ -3,8 +3,8 @@ import { CredentialsBox } from "@/components/TemporaryLogin";
 import Link from "next/link";
 import { startTransition, useActionState } from "react";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
 import Spinner from "./Spinner";
-import { useRouter } from "next/navigation";
 type Option = { id: string; label: string };
 
 export type EmployeeFormValues = {
@@ -53,7 +53,7 @@ export default function EmployeeForm({
     action,
     {} as ActionState,
   );
-  const router = useRouter();
+  useActionToast(state, isEdit ? "Employee saved." : "Employee added.");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -62,7 +62,6 @@ export default function EmployeeForm({
     //this will automatically set the employeeCode to biometicId
     startTransition(() => formAction(fd));
   }
-  if (pending) return <Spinner />;
   // After a new employee is saved, show their login once instead of leaving the page.
   if (!isEdit && state.ok && state.login) {
     return (
@@ -97,6 +96,7 @@ export default function EmployeeForm({
       onSubmit={onSubmit}
       className="max-w-2xl form-style space-y-4 rounded bg-white p-6"
     >
+      {pending && <Spinner />}
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
 
       <div className="grid gap-4 sm:grid-cols-2">

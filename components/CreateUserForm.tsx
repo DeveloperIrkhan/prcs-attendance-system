@@ -2,7 +2,9 @@
 
 import { startTransition, useActionState, useRef } from "react";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
 import { CredentialsBox } from "@/components/TemporaryLogin";
+import Spinner from "./Spinner";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -16,6 +18,7 @@ export default function CreateUserForm({ action, roles }: Props) {
     {} as ActionState,
   );
   const formRef = useRef<HTMLFormElement>(null);
+  useActionToast(state, "User created.");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,6 +28,7 @@ export default function CreateUserForm({ action, roles }: Props) {
 
   return (
     <div className="space-y-4">
+      {pending && <Spinner />}
       <form
         ref={formRef}
         onSubmit={onSubmit}

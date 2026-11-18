@@ -10,8 +10,8 @@ import { listNocForIssuers } from "@/services/noc.service";
 const FILTERS: { value: NocStatus | "ALL"; label: string }[] = [
   { value: "APPROVED", label: "Waiting for the NOC document" },
   { value: "ISSUED", label: "Issued" },
-  { value: "PENDING_DD", label: "With the DD" },
-  { value: "PENDING_FINAL", label: "With the CEO" },
+  { value: "PENDING_DD", label: "With the department head" },
+  { value: "PENDING_FINAL", label: "With the Secretary General" },
   { value: "REJECTED", label: "Rejected" },
   { value: "ALL", label: "All" },
 ];
@@ -42,7 +42,7 @@ export default async function IssueNocPage({
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Issue NOC</h1>
       <p className="text-sm text-zinc-600">
-        Requests the CEO has approved are waiting here. Upload the NOC (PDF,
+        Requests the Secretary General has approved are waiting here. Upload the NOC (PDF,
         Word, PNG or JPG, up to 3 MB); the employee can then download it. You
         cannot issue your own NOC.
       </p>
@@ -110,8 +110,8 @@ export default async function IssueNocPage({
                   />
                 </td>
                 <td className="p-3 text-xs text-zinc-600">
-                  {r.ddName && <div>DD: {r.ddName}</div>}
-                  {r.finalName && <div>CEO: {r.finalName}</div>}
+                  {r.ddName && <div>Department head: {r.ddName}</div>}
+                  {r.finalName && <div>Secretary General: {r.finalName}</div>}
                   {r.issuedName && <div>Issued by {r.issuedName}</div>}
                 </td>
                 <td className="p-3">

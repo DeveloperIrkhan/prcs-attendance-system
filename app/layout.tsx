@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "react-toastify/dist/ReactToastify.css";
 import { Noto_Sans, Playfair_Display } from "next/font/google";
 import { cn } from "../lib/utils";
-import {ToastContainer} from "react-toastify"
+import { ToastContainer } from "react-toastify";
 const playfairDisplayHeading = Playfair_Display({subsets:['latin'],variable:'--font-heading'});
 
 const notoSans = Noto_Sans({subsets:['latin'],variable:'--font-sans'});
@@ -20,7 +21,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", notoSans.variable, playfairDisplayHeading.variable)}>
       <body>
-        <ToastContainer/>
+        <ToastContainer
+          position="top-right"
+          autoClose={3500}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          draggable
+          theme="light"
+        />
         {children}
       </body>
     </html>

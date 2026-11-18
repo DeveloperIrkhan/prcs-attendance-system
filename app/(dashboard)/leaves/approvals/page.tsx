@@ -7,14 +7,16 @@ import ScrollTable from "@/components/ScrollTable";
 import { decideLeaveRequestAction } from "../actions";
 
 const SCOPE: Record<string, string> = {
+  HOD: "leave requests of staff in your department (up to 3 working days)",
   DD: "leave requests of staff in your department, and in any department you hold additional charge of (up to 3 working days)",
-  CEO: "requests routed to the CEO, and requests routed to a DD (you hold parent rights over DDs)",
+  CEO: "requests routed to the Secretary General, and requests routed to a department head (you hold parent rights over them)",
   CHAIRMAN:
-    "requests routed to the Chairman, and requests routed to the CEO or a DD (you hold parent rights over both)",
+    "requests routed to the Chairperson, and requests routed to the Secretary General or a department head (you hold parent rights over both)",
 };
 
 export default async function LeaveApprovalsPage() {
-  // Access follows the designation, not the role: DD, CEO and Chairman may open this page.
+  // Access follows the designation, not the role: HOD, DD, Secretary General and
+  // Chairperson may open this page.
   const user = await requireUser();
   const me = getApproverIdentity(user);
 

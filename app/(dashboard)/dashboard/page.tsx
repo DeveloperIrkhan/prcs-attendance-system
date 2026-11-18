@@ -38,7 +38,7 @@ export default async function DashboardPage({
 
   if (scope.kind !== "SELF") {
     // Manager dashboard. The scope limits every number on it:
-    //   HR / IT Officer / Admin / CEO / Chairman -> the whole organization
+    //   HR / IT / Admin / CEO / Chairman -> the whole organization
     //   DD -> their own department only
     const dashboardView = await resolveDashboardView(sp, scope);
     // import batches and the activity feed are only for people who can see attendance data

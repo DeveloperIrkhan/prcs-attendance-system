@@ -16,7 +16,7 @@ type SearchParams = Promise<{
 /*
 A person's own attendance, by day and by month. 
 Available to everyone who has an employee record, 
-including DD, CEO, Chairman, HR and IT Officers, 
+including DD, CEO, Chairman, HR and IT, 
 whose main dashboard shows department or 
 organization data instead. */
 export default async function MyDashboardPage({

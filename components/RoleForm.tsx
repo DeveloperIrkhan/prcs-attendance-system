@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import type { ActionState } from "@/lib/action-state";
+import { useActionToast } from "@/lib/use-action-toast";
 import { PERMISSION_GROUPS } from "@/lib/auth/permissions";
 import Spinner from "./Spinner";
 
@@ -35,6 +36,7 @@ export default function RoleForm({
   );
   const formRef = useRef<HTMLFormElement>(null);
   const idSuffix = initial?.id ?? "new";
+  useActionToast(state, "Role saved.");
 
   useEffect(() => {
     if (state.ok && resetOnSuccess) formRef.current?.reset();

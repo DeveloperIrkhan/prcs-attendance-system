@@ -576,7 +576,7 @@ export async function buildReport(
           mins(total),
         ],
         notes: [
-          "Overtime is time after the shift end, as set on the Rules page.",
+          "Overtime starts only after the buffer set on the Rules page (default 60 minutes after the shift end), and is shown in hours. With a 5:00 PM shift end and a 60-minute buffer, overtime starts at 6:00 PM.",
         ],
         employeePages: { key: [0, 1], name: 1 },
       };

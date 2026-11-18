@@ -1,8 +1,8 @@
 // Whose attendance and leave data a person may see. Follows the designation, not the role:
 //
-//   Admin / HR / IT Officer (permission attendance:view)  -> ALL
-//   CEO, Chairman                                        -> ALL
-//   DD (head of department)                              -> DEPARTMENT (their own, plus any additional charge)
+//   Admin / HR / IT (permission attendance:view)  -> ALL
+//   CEO, Chairman (Secretary General, Chairperson)        -> ALL
+//   DD / HOD (head of department)                         -> DEPARTMENT (their own, plus any additional charge)
 //   everyone else                                        -> SELF (only their own data)
 //
 // Pure functions: no database, easy to test.
@@ -29,7 +29,7 @@ export function resolveDataScope(input: {
   if (input.level === "CEO" || input.level === "CHAIRMAN") {
     return { kind: "ALL" };
   }
-  if (input.level === "DD" && input.departmentId) {
+  if ((input.level === "DD" || input.level === "HOD") && input.departmentId) {
     return {
       kind: "DEPARTMENT",
       departmentId: input.departmentId,
@@ -43,11 +43,11 @@ export function resolveDataScope(input: {
 
 /**
  * Whose LEAVE requests a person may look at (the Leaves pages). Stricter than resolveDataScope:
- * an IT Officer sees everyone's attendance but has no business reading leave reasons.
+ * the IT role sees everyone's attendance but has no business reading leave reasons.
  *
  *   leaves:manage (HR) or leaves:view   -> ALL
  *   CEO, Chairman (by designation)      -> ALL
- *   DD (by designation)                 -> DEPARTMENT (their own, plus any additional charge)
+ *   DD / HOD (by designation)           -> DEPARTMENT (their own, plus any additional charge)
  *   everyone else                       -> null (no access to the Leaves pages)
  */
 export function resolveLeaveScope(input: {
@@ -65,7 +65,7 @@ export function resolveLeaveScope(input: {
   if (input.level === "CEO" || input.level === "CHAIRMAN") {
     return { kind: "ALL" };
   }
-  if (input.level === "DD" && input.departmentId) {
+  if ((input.level === "DD" || input.level === "HOD") && input.departmentId) {
     return {
       kind: "DEPARTMENT",
       departmentId: input.departmentId,

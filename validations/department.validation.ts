@@ -23,7 +23,9 @@ export const designationSchema = z.object({
     .trim()
     .min(2, "Title must be at least 2 characters")
     .max(100),
-  approvalLevel: z.enum(["STAFF", "DD", "CEO", "CHAIRMAN"]).default("STAFF"),
+  approvalLevel: z
+    .enum(["STAFF", "HOD", "DD", "CEO", "CHAIRMAN"])
+    .default("STAFF"),
 });
 export const designationUpdateSchema = designationSchema.extend({
   id: z.string().min(1),

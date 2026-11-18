@@ -52,11 +52,11 @@ export default async function DepartmentsPage() {
         </div>
 
         <section className="rounded-md bg-white p-4 shadow-lg">
-          <h2 className="font-medium">Acting CEO / Chairman</h2>
+          <h2 className="font-medium">Acting Secretary General / Chairperson</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Use this while the CEO or Chairman post is vacant. A DD (or the
-            acting CEO for Chairman) who acts at that level approves the
-            requests routed to it, and sees the whole organization&apos;s
+            Use this while the Secretary General or Chairperson post is vacant. A DD
+            (or the acting Secretary General for Chairperson) who acts at that level
+            approves the requests routed to it, and sees the whole organization&apos;s
             attendance. Remove the role when the post is filled.
           </p>
           <div className="mt-3 grid gap-6 md:grid-cols-2">
@@ -73,7 +73,9 @@ export default async function DepartmentsPage() {
                     >
                       <span>
                         <span className="font-medium">
-                          {a.level === "CEO" ? "Acting CEO" : "Acting Chairman"}
+                          {a.level === "CEO"
+                            ? "Acting Secretary General"
+                            : "Acting Chairperson"}
                         </span>
                         : {a.employee.name}{" "}
                         <span className="text-xs text-zinc-500">
@@ -92,7 +94,7 @@ export default async function DepartmentsPage() {
                         id={a.id}
                         label="Remove"
                         danger
-                        confirmMessage={`Remove ${a.employee.name} as acting ${a.level === "CEO" ? "CEO" : "Chairman"}?`}
+                        confirmMessage={`Remove ${a.employee.name} as acting ${a.level === "CEO" ? "Secretary General" : "Chairperson"}?`}
                       />
                     </li>
                   ))}
@@ -111,8 +113,8 @@ export default async function DepartmentsPage() {
                     label: "Acting as",
                     required: true,
                     options: [
-                      { value: "CEO", label: "CEO" },
-                      { value: "CHAIRMAN", label: "Chairman" },
+                      { value: "CEO", label: "Secretary General" },
+                      { value: "CHAIRMAN", label: "Chairperson" },
                     ],
                   },
                   {
@@ -146,7 +148,7 @@ export default async function DepartmentsPage() {
                 <th className="p-3">Name</th>
                 <th className="p-3">Description</th>
                 <th className="p-3">Employees</th>
-                <th className="p-3">Leave approver (DD)</th>
+                <th className="p-3">Leave approver (DD / HOD)</th>
                 <th className="p-3">Actions</th>
               </tr>
             </thead>
@@ -165,11 +167,16 @@ export default async function DepartmentsPage() {
                   <td className="p-3">{d._count.employees}</td>
                   <td className="p-3">
                     <p className="text-xs text-zinc-500">
-                      DD of this department
+                      DD / HOD of this department
                     </p>
                     <p>
                       {d.employees.length > 0
-                        ? d.employees.map((e) => e.name).join(", ")
+                        ? d.employees
+                            .map(
+                              (e) =>
+                                `${e.name} (${e.designation?.approvalLevel ?? "?"})`,
+                            )
+                            .join(", ")
                         : "None"}
                     </p>
                     <p className="mt-2 text-xs text-zinc-500">
@@ -204,7 +211,7 @@ export default async function DepartmentsPage() {
                     {d.employees.length === 0 &&
                       d.chargeHolders.length === 0 && (
                         <p className="mt-1 text-xs text-amber-700">
-                          No approver: short leaves go to the CEO.
+                          No approver: short leaves go to the Secretary General.
                         </p>
                       )}
                     <details className="mt-2">

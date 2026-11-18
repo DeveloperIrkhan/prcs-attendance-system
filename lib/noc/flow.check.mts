@@ -4,7 +4,10 @@ import { startNocRoute, checkNocDecision, nocStatusLabel, parseNocCategory } fro
 
 // ---- where a request starts
 assert.deepEqual(startNocRoute({ requesterLevel: "STAFF", hasDepartmentDd: true }), { status: "PENDING_DD", approverLevel: "DD" });
-assert.deepEqual(startNocRoute({ requesterLevel: "STAFF", hasDepartmentDd: false }), { status: "PENDING_FINAL", approverLevel: "CEO" }); // no DD: straight to the CEO
+assert.deepEqual(startNocRoute({ requesterLevel: "STAFF", hasDepartmentDd: true, hasDepartmentHod: true }), { status: "PENDING_DD", approverLevel: "DD" }); // the DD outranks the HOD
+assert.deepEqual(startNocRoute({ requesterLevel: "STAFF", hasDepartmentDd: false, hasDepartmentHod: true }), { status: "PENDING_DD", approverLevel: "HOD" }); // no DD: the HOD is the head
+assert.deepEqual(startNocRoute({ requesterLevel: "STAFF", hasDepartmentDd: false }), { status: "PENDING_FINAL", approverLevel: "CEO" }); // no DD or HOD: straight to the Secretary General
+assert.deepEqual(startNocRoute({ requesterLevel: "HOD", hasDepartmentDd: true }), { status: "PENDING_FINAL", approverLevel: "CEO" });
 assert.deepEqual(startNocRoute({ requesterLevel: "DD", hasDepartmentDd: true }), { status: "PENDING_FINAL", approverLevel: "CEO" });
 assert.deepEqual(startNocRoute({ requesterLevel: "CEO", hasDepartmentDd: true }), { status: "PENDING_FINAL", approverLevel: "CHAIRMAN" });
 assert.deepEqual(startNocRoute({ requesterLevel: "CHAIRMAN", hasDepartmentDd: false }), { status: "APPROVED", approverLevel: null });
@@ -42,8 +45,9 @@ assert.equal(checkNocDecision({ ...base, isOwnRequest: true, status: "APPROVED",
 assert.equal(checkNocDecision({ ...base, isOwnRequest: false, status: "PENDING_DD", decision: "CANCEL" }).ok, false);
 
 // ---- words
-assert.equal(nocStatusLabel("PENDING_FINAL", "CHAIRMAN"), "Waiting for the Chairman");
-assert.equal(nocStatusLabel("PENDING_FINAL", "CEO"), "Waiting for the CEO");
+assert.equal(nocStatusLabel("PENDING_DD", "HOD"), "Waiting for the department HOD");
+assert.equal(nocStatusLabel("PENDING_FINAL", "CHAIRMAN"), "Waiting for the Chairperson");
+assert.equal(nocStatusLabel("PENDING_FINAL", "CEO"), "Waiting for the Secretary General");
 assert.equal(nocStatusLabel("ISSUED", null), "NOC issued");
 assert.equal(parseNocCategory("Bank / loan"), "Bank / loan"); assert.equal(parseNocCategory("<script>"), "Other");
 console.log("noc flow: all checks passed");

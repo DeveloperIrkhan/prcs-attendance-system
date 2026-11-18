@@ -11,15 +11,20 @@ import {
 
 const LEVEL_OPTIONS = [
   { value: "STAFF", label: "Staff (AD, SO, others)" },
-  { value: "DD", label: "DD (approves own department, up to 3 days)" },
-  { value: "CEO", label: "CEO" },
-  { value: "CHAIRMAN", label: "Chairman" },
+  {
+    value: "HOD",
+    label: "HOD (head of a department without a DD, up to 3 days)",
+  },
+  { value: "DD", label: "DD (head of department, up to 3 days)" },
+  { value: "CEO", label: "Secretary General" },
+  { value: "CHAIRMAN", label: "Chairperson" },
 ];
 const LEVEL_LABEL: Record<string, string> = {
   STAFF: "Staff",
+  HOD: "HOD",
   DD: "DD",
-  CEO: "CEO",
-  CHAIRMAN: "Chairman",
+  CEO: "Secretary General",
+  CHAIRMAN: "Chairperson",
 };
 
 export default async function DesignationsPage() {

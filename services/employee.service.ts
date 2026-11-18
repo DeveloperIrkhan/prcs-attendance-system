@@ -6,6 +6,7 @@ import { generateTemporaryPassword } from "@/lib/auth/temporary-password";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import type { EmployeeInput } from "@/validations/employee.validation";
 import { employeeWhereFor, type DataScope } from "@/lib/auth/data-scope";
+import { recordAudit } from "./audit.service";
 
 export const PAGE_SIZE = 70;
 
@@ -195,6 +196,14 @@ export async function createEmployee(
     return created;
   });
 
+  await recordAudit({
+    action: "employee.create",
+    entity: "Employee",
+    entityId: employee.id,
+    summary: `Added employee ${input.name} (${input.employeeCode})`,
+    after: { ...toData(input), isActive: true },
+  });
+
   return {
     employeeId: employee.id,
     login: { name: input.name, email: input.email, password },
@@ -212,8 +221,23 @@ export async function updateEmployee(id: string, input: EmployeeInput) {
   });
   if (existingUser) await assertLoginEmailFree(input.email, existingUser.id);
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.employee.update({
+  const before = await prisma.employee.findUnique({
+    where: { id },
+    select: {
+      employeeCode: true,
+      biometricId: true,
+      name: true,
+      email: true,
+      phoneNumber: true,
+      joiningDate: true,
+      departmentId: true,
+      designationId: true,
+      isActive: true,
+    },
+  });
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const saved = await tx.employee.update({
       where: { id },
       data: { ...toData(input), isActive: input.isActive },
     });
@@ -227,20 +251,45 @@ export async function updateEmployee(id: string, input: EmployeeInput) {
         },
       });
     }
-    return updated;
+    return saved;
   });
+
+  await recordAudit({
+    action: "employee.update",
+    entity: "Employee",
+    entityId: id,
+    summary: `Updated employee ${updated.name} (${updated.employeeCode})`,
+    before,
+    after: { ...toData(input), isActive: input.isActive },
+  });
+  return updated;
 }
 
 export async function setEmployeeActive(id: string, isActive: boolean) {
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.employee.update({
+  const employee = await prisma.employee.findUnique({
+    where: { id },
+    select: { name: true, employeeCode: true },
+  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const saved = await tx.employee.update({
       where: { id },
       data: { isActive },
     });
     // A deactivated employee can no longer sign in; reactivating restores the login.
     await tx.user.updateMany({ where: { employeeId: id }, data: { isActive } });
-    return updated;
+    return saved;
   });
+  await recordAudit({
+    action: isActive ? "employee.activate" : "employee.deactivate",
+    entity: "Employee",
+    entityId: id,
+    summary: `${isActive ? "Reactivated" : "Deactivated"} employee ${
+      employee ? `${employee.name} (${employee.employeeCode})` : id
+    }`,
+    before: { isActive: !isActive },
+    after: { isActive },
+  });
+  return updated;
 }
 
 /**
@@ -295,5 +344,11 @@ export async function resetEmployeeLogin(
       },
     });
   }
+  await recordAudit({
+    action: "employee.reset-login",
+    entity: "Employee",
+    entityId: employee.id,
+    summary: `Issued a new one-time password for ${employee.name} (${employee.email})`,
+  });
   return { name: employee.name, email: employee.email, password };
 }
