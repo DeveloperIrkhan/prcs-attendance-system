@@ -253,6 +253,23 @@ let running = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let attendanceInitialized = false;
 
+/**
+ * True once attendance history has been built, so a restart only needs the recent window.
+ * Re-reading four years of punches and recomputing the whole history takes minutes on a cold
+ * database, and a slow first round is where a wedged one hides. Either a completed round
+ * (its heartbeat) or existing attendance rows prove the history is there.
+ */
+async function attendanceInitializedAlready() {
+  const [sync, attendance] = await Promise.all([
+    prisma.syncStatus.findFirst({
+      where: { lastSuccessAt: { not: null } },
+      select: { id: true },
+    }),
+    prisma.attendance.findFirst({ select: { id: true } }),
+  ]);
+  return sync !== null || attendance !== null;
+}
+
 async function poll() {
   if (stopping || running) return;
 
@@ -283,6 +300,9 @@ async function poll() {
       // ends: employees who never punched become Absent, and a lone check-in turns into Missing
       // punch. It runs once per poll even with several devices.
       try {
+        if (!attendanceInitialized) {
+          attendanceInitialized = await attendanceInitializedAlready();
+        }
         await processDevicePunches(attendanceInitialized ? { sinceDays: 2 } : {});
         attendanceInitialized = true;
       } catch (error) {

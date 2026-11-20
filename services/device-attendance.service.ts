@@ -15,6 +15,56 @@ const DAY_MS = 86_400_000;
 const SOURCE = "Source: uFace800";
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
+type AttendanceFields = {
+  checkIn: Date | null;
+  checkOut: Date | null;
+  workingMinutes: number;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  overtimeMinutes: number;
+  status: AttendanceStatus;
+  remarks: string;
+  punches: string | null;
+  sourceBatchId: null;
+};
+
+type AttendanceWrite = {
+  employeeId: string;
+  date: Date;
+  data: AttendanceFields;
+};
+
+const sameMoment = (a: Date | null, b: Date | null) =>
+  (a?.getTime() ?? null) === (b?.getTime() ?? null);
+
+/** True when the stored row does not already hold exactly what this round computed. */
+function differsFromStored(
+  stored: {
+    checkIn: Date | null;
+    checkOut: Date | null;
+    workingMinutes: number;
+    lateMinutes: number;
+    earlyLeaveMinutes: number;
+    overtimeMinutes: number;
+    status: AttendanceStatus;
+    remarks: string | null;
+    punches: string | null;
+  },
+  next: AttendanceFields,
+) {
+  return (
+    !sameMoment(stored.checkIn, next.checkIn) ||
+    !sameMoment(stored.checkOut, next.checkOut) ||
+    stored.workingMinutes !== next.workingMinutes ||
+    stored.lateMinutes !== next.lateMinutes ||
+    stored.earlyLeaveMinutes !== next.earlyLeaveMinutes ||
+    stored.overtimeMinutes !== next.overtimeMinutes ||
+    stored.status !== next.status ||
+    stored.remarks !== next.remarks ||
+    stored.punches !== next.punches
+  );
+}
+
 export async function processDevicePunches(
   options: { sinceDays?: number } = {},
 ) {
@@ -47,6 +97,11 @@ export async function processDevicePunches(
       select: { deviceUserId: true, punchedAt: true },
     }),
   ]);
+
+  console.log(
+    `uFace800 attendance: loaded ${punches.length} punches ` +
+      `(${since ? `since ${iso(since)}` : "full history"})`,
+  );
 
   // "005" on the device and "5" on the employee are the same person (as in the Excel import).
   const employeeByDeviceId = new Map<string, (typeof employees)[number]>();
@@ -120,7 +175,20 @@ export async function processDevicePunches(
   const [existing, leaves] = await Promise.all([
     prisma.attendance.findMany({
       where: { date: { gte: rangeStart, lte: rangeEnd } },
-      select: { employeeId: true, date: true, isManual: true },
+      select: {
+        employeeId: true,
+        date: true,
+        isManual: true,
+        checkIn: true,
+        checkOut: true,
+        workingMinutes: true,
+        lateMinutes: true,
+        earlyLeaveMinutes: true,
+        overtimeMinutes: true,
+        status: true,
+        remarks: true,
+        punches: true,
+      },
     }),
     prisma.leaveRequest.findMany({
       where: {
@@ -131,7 +199,10 @@ export async function processDevicePunches(
       select: { employeeId: true, startDate: true, endDate: true },
     }),
   ]);
-  const existingKeys = new Set(existing.map((r) => `${r.employeeId}|${iso(r.date)}`));
+  const existingByKey = new Map<string, (typeof existing)[number]>(
+    existing.map((r) => [`${r.employeeId}|${iso(r.date)}`, r]),
+  );
+  const existingKeys = new Set(existingByKey.keys());
   const manualKeys = new Set(
     existing.filter((r) => r.isManual).map((r) => `${r.employeeId}|${iso(r.date)}`),
   );
@@ -146,7 +217,8 @@ export async function processDevicePunches(
   let skippedBeforeJoining = 0;
 
   // ---- 1. employee-days that have punches
-  const upserts = [];
+  const toCreate: (AttendanceFields & { employeeId: string; date: Date })[] = [];
+  const toUpdate: AttendanceWrite[] = [];
   for (const group of groups.values()) {
     const date = new Date(`${group.dateIso}T00:00:00.000Z`);
     const joining = joinedBy.get(group.employeeId);
@@ -179,7 +251,7 @@ export async function processDevicePunches(
       remarks = "Approved leave";
     }
 
-    const data = {
+    const fields: AttendanceFields = {
       checkIn: result.checkIn === null ? null : new Date(date.getTime() + result.checkIn * 60_000),
       checkOut: result.checkOut === null ? null : new Date(date.getTime() + result.checkOut * 60_000),
       workingMinutes: result.workingMinutes,
@@ -191,17 +263,56 @@ export async function processDevicePunches(
       punches: result.accepted.map(formatMinutes).join(" ") || null,
       sourceBatchId: null,
     };
-    upserts.push(
-      prisma.attendance.upsert({
-        where: { employeeId_date: { employeeId: group.employeeId, date } },
-        update: data,
-        create: { employeeId: group.employeeId, date, ...data },
-      }),
-    );
+
+    const stored = existingByKey.get(`${group.employeeId}|${group.dateIso}`);
+    if (!stored) {
+      toCreate.push({ employeeId: group.employeeId, date, ...fields });
+    } else if (differsFromStored(stored, fields)) {
+      toUpdate.push({ employeeId: group.employeeId, date, data: fields });
+    }
     processed++;
   }
-  for (let i = 0; i < upserts.length; i += 100) {
-    await prisma.$transaction(upserts.slice(i, i + 100));
+
+  // Progress lines: one slow round on a cold Neon database is hard to tell apart from a
+  // wedged one without them.
+  console.log(
+    `uFace800 attendance: ${punches.length} punches, ${groups.size} employee-days, ` +
+      `${toCreate.length} new rows, ${toUpdate.length} changed rows`,
+  );
+
+  // New employee-days go in with a few bulk INSERTs. This is the first-run path:
+  // tens of thousands of rows would take far too long one interactive transaction at a time.
+  for (let i = 0; i < toCreate.length; i += 500) {
+    await prisma.attendance.createMany({
+      data: toCreate.slice(i, i + 500),
+      skipDuplicates: true,
+    });
+    console.log(
+      `uFace800 attendance: inserted ${Math.min(i + 500, toCreate.length)}/${toCreate.length}`,
+    );
+  }
+
+  // Only rows whose computed values changed are rewritten, so a normal poll touches a
+  // handful of rows (mostly today's) instead of the whole history.
+  for (let i = 0; i < toUpdate.length; i += 100) {
+    await prisma.$transaction(
+      toUpdate.slice(i, i + 100).map((row) =>
+        prisma.attendance.update({
+          where: {
+            employeeId_date: {
+              employeeId: row.employeeId,
+              date: row.date,
+            },
+          },
+          data: row.data,
+        }),
+      ),
+      // Neon round-trips are slow; the 5 s default is too tight for a batch of writes.
+      { maxWait: 15_000, timeout: 60_000 },
+    );
+    console.log(
+      `uFace800 attendance: updated ${Math.min(i + 100, toUpdate.length)}/${toUpdate.length}`,
+    );
   }
 
   // ---- 2. days that are over, with no row yet: absent / on leave / weekly off / holiday

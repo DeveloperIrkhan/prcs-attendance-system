@@ -1,7 +1,7 @@
 "use client";
 import { CredentialsBox } from "@/components/TemporaryLogin";
 import Link from "next/link";
-import { startTransition, useActionState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import type { ActionState } from "@/lib/action-state";
 import { useActionToast } from "@/lib/use-action-toast";
 import Spinner from "./Spinner";
@@ -42,13 +42,29 @@ type Props = {
 
 const input = "w-full rounded border px-3 py-2 custom-input";
 
-export default function EmployeeForm({
+/**
+ * The "add another" button remounts the form with a new key. Navigating to the same /new route
+ * would leave this client component mounted and keep the success state on screen.
+ */
+export default function EmployeeForm(props: Props) {
+  const [instance, setInstance] = useState(0);
+  return (
+    <EmployeeFormInstance
+      key={instance}
+      {...props}
+      onAddAnother={() => setInstance((n) => n + 1)}
+    />
+  );
+}
+
+function EmployeeFormInstance({
   action,
   departments,
   designations,
   initial = emptyEmployee,
   isEdit,
-}: Props) {
+  onAddAnother,
+}: Props & { onAddAnother: () => void }) {
   const [state, formAction, pending] = useActionState(
     action,
     {} as ActionState,
@@ -73,16 +89,13 @@ export default function EmployeeForm({
         <CredentialsBox login={state.login} />
 
         <div className="flex gap-3">
-          <Link href="/employees/new"
-            // type="button"
-            // onClick={() => {
-            //   console.log("Add another employee clicked");
-            //   router.push("/employees/new");
-            // }}
+          <button
+            type="button"
+            onClick={onAddAnother}
             className="green-button hoverEffect"
           >
             Add another employee
-          </Link>
+          </button>
 
           <Link href="/employees" className="green-button-inverse hoverEffect">
             Go to employees

@@ -32,9 +32,9 @@ const ms = (v: Date | string | null): number | null => {
 /**
  * ok       a sync finished within about 2.5 poll intervals (at least 3 minutes)
  * delayed  longer than that, but under 6 intervals (at least 10 minutes)
- * down     longer than that
- * never    it has never succeeded (the script was never started, or the device was never
- *          reachable); the last error, if any, is still available for the tooltip
+ * down     longer than that, or attempts that have never succeeded
+ * never    it has never even tried (the script was never started); the last error,
+ *          if any, is still available for the tooltip
  */
 export function evaluateSyncHealth(
   row: SyncRow | null,
@@ -50,8 +50,12 @@ export function evaluateSyncHealth(
   }
   const success = ms(row.lastSuccessAt);
   if (success === null) {
+    // It has tried and failed (or is failing right now) but has never completed a
+    // round. That is not "not started": the script is running and cannot reach the
+    // device. Only a row with no attempt at all counts as "never".
+    const attempted = ms(row.lastAttemptAt) !== null || row.consecutiveFailures > 0;
     return {
-      state: "never",
+      state: attempted ? "down" : "never",
       minutesSince: null,
       lastSuccessAt: null,
       lastError: row.lastError,
