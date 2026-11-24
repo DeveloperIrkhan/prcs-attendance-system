@@ -20,6 +20,10 @@ import {
   type ApprovalLevel,
   type ApproverLevel,
 } from "@/lib/leave/approval-routing";
+import {
+  findDepartmentDd,
+  findDepartmentHod,
+} from "@/lib/leave/department-head";
 import type { DayType } from "@/lib/attendance/attendance-rules";
 import { addDays, parseIsoDate, toIsoDate } from "@/lib/attendance/dates";
 import type {
@@ -216,35 +220,52 @@ async function hasActiveApprover(
   opts: { departmentId?: string; excludeEmployeeId: string },
 ) {
   const higher = levelsAbove(level);
+  const or: Prisma.EmployeeWhereInput[] = [
+    {
+      designation: { approvalLevel: level },
+      // a department head counts inside their own department and where they hold
+      // additional charge
+      ...((level === "DD" || level === "HOD") && opts.departmentId
+        ? {
+            OR: [
+              { departmentId: opts.departmentId },
+              {
+                additionalCharges: {
+                  some: { departmentId: opts.departmentId },
+                },
+              },
+            ],
+          }
+        : {}),
+    },
+    ...(higher.length
+      ? [{ designation: { approvalLevel: { in: higher } } }]
+      : []),
+    // an AD (or HOD) holding additional charge acts as that department's HOD
+    ...(level === "HOD" && opts.departmentId
+      ? [
+          {
+            designation: {
+              OR: [
+                { approvalLevel: "HOD" as const },
+                { title: { equals: "AD", mode: "insensitive" as const } },
+              ],
+            },
+            additionalCharges: {
+              some: { departmentId: opts.departmentId },
+            },
+          },
+        ]
+      : []),
+    // someone acting as CEO / Chairman while the post is vacant
+    { actingApprovals: { some: { level: { in: [level, ...higher] } } } },
+  ];
   const found = await prisma.employee.findFirst({
     where: {
       id: { not: opts.excludeEmployeeId },
       isActive: true,
       user: { is: { isActive: true } },
-      OR: [
-        {
-          designation: { approvalLevel: level },
-          // a department head counts inside their own department and where they hold
-          // additional charge
-          ...((level === "DD" || level === "HOD") && opts.departmentId
-            ? {
-                OR: [
-                  { departmentId: opts.departmentId },
-                  {
-                    additionalCharges: {
-                      some: { departmentId: opts.departmentId },
-                    },
-                  },
-                ],
-              }
-            : {}),
-        },
-        ...(higher.length
-          ? [{ designation: { approvalLevel: { in: higher } } }]
-          : []),
-        // someone acting as CEO / Chairman while the post is vacant
-        { actingApprovals: { some: { level: { in: [level, ...higher] } } } },
-      ],
+      OR: or,
     },
     select: { id: true },
   });
@@ -299,8 +320,21 @@ async function explainMissingApprover(opts: {
     prisma.employee.findMany({
       where: {
         id: { not: opts.requesterId },
-        designation: { approvalLevel: "HOD" },
-        departmentId: opts.departmentId,
+        OR: [
+          {
+            departmentId: opts.departmentId,
+            designation: { approvalLevel: "HOD" },
+          },
+          {
+            additionalCharges: { some: { departmentId: opts.departmentId } },
+            designation: {
+              OR: [
+                { approvalLevel: "HOD" as const },
+                { title: { equals: "AD", mode: "insensitive" as const } },
+              ],
+            },
+          },
+        ],
       },
       select: {
         name: true,
@@ -330,7 +364,7 @@ async function explainMissingApprover(opts: {
   const problems: string[] = [];
   if (ddsHere.length === 0 && hodsHere.length === 0) {
     problems.push(
-      `no employee in ${dept} has a designation with approval level "DD" or "HOD", and no DD has been given additional charge of it (Departments page, "Additional charge")`,
+      `no employee in ${dept} has a designation with approval level "DD" or "HOD", and no DD, HOD or AD has been given additional charge of it (Departments page, "Additional charge")`,
     );
   } else {
     for (const d of [...ddsHere, ...hodsHere]) {
@@ -380,46 +414,28 @@ async function planRoute(
 
   if (route.sameDepartment) {
     // Only a department head of this department may decide a short request: its own DD, a
-    // DD of another department who holds additional charge of it, or its HOD when the
-    // department has no DD. If there is nobody, escalate to the Secretary General.
-    const ownDd = await prisma.employee.findFirst({
-      where: {
-        id: { not: employee.id },
-        isActive: true,
-        designation: { approvalLevel: "DD" },
-        user: { is: { isActive: true } },
-        OR: [
-          { departmentId: employee.departmentId },
-          {
-            additionalCharges: { some: { departmentId: employee.departmentId } },
-          },
-        ],
-      },
-      select: { id: true },
-    });
-    if (ownDd) {
+    // DD holding additional charge of it, or its HOD / an AD holding additional charge as
+    // acting HOD when the department has no DD. Otherwise escalate to the Secretary General.
+    const departmentDd = await findDepartmentDd(employee.id, employee.departmentId);
+    if (departmentDd) {
       approverDepartmentId = employee.departmentId;
     } else if (requesterLevel === "STAFF") {
-      // No DD: the department's HOD is its head. (An HOD's own leave never goes to a
-      // fellow HOD; it goes to the Secretary General below.)
-      const ownHod = await prisma.employee.findFirst({
-        where: {
-          id: { not: employee.id },
-          isActive: true,
-          designation: { approvalLevel: "HOD" },
-          user: { is: { isActive: true } },
-          departmentId: employee.departmentId,
-        },
-        select: { id: true },
-      });
-      if (ownHod) {
+      // No DD: the department's HOD (or an AD with additional charge) is its head.
+      // An HOD's own leave never goes to a fellow HOD; it goes to the Secretary General below.
+      const departmentHod = await findDepartmentHod(
+        employee.id,
+        employee.departmentId,
+      );
+      if (departmentHod) {
         approverLevel = "HOD";
         approverDepartmentId = employee.departmentId;
-        routeNote = "No DD in department, sent to the HOD";
+        routeNote = departmentHod.viaCharge
+          ? "No DD in department, sent to the AD holding additional charge (acting HOD)"
+          : "No DD in department, sent to the HOD";
       } else {
         approverLevel = "CEO";
         routeNote =
-          "No DD or HOD in department, sent to the Secretary General";
+          "No DD or acting HOD in department, sent to the Secretary General";
       }
     } else {
       approverLevel = "CEO";
@@ -760,13 +776,23 @@ const requestInclude = {
  */
 export async function listPendingForApprover(user: AuthUser) {
   const me = getApproverIdentity(user);
-  if (!me || me.level === "STAFF") return [];
+  if (!me || (me.level === "STAFF" && !me.actingHodDepartmentIds?.length))
+    return [];
 
   const departmentIds = [
     me.departmentId,
     ...(me.chargeDepartmentIds ?? []),
+    ...(me.actingHodDepartmentIds ?? []),
   ];
   const or: Prisma.LeaveRequestWhereInput[] = [];
+
+  // An AD holding additional charge acts as HOD only in those departments.
+  if (me.level === "STAFF") {
+    or.push({
+      approverLevel: "HOD",
+      approverDepartmentId: { in: me.actingHodDepartmentIds ?? [] },
+    });
+  }
 
   // Requests waiting at this person's own level.
   if (isDepartmentHeadLevel(me.level)) {

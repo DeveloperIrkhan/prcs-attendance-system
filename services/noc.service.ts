@@ -11,6 +11,7 @@ import {
   type ApproverIdentity,
   type ApproverLevel,
 } from "@/lib/leave/approval-routing";
+import { findDepartmentHead as findHead } from "@/lib/leave/department-head";
 import {
   checkNocDecision,
   parseNocCategory,
@@ -27,43 +28,17 @@ const MAX_OPEN_REQUESTS = 5;
 
 const userCanIssue = (user: AuthUser) => canIssueNoc(user.role.permissions);
 
-/** An active DD with a login in this department, or one who holds additional charge of it. */
-async function findDepartmentDd(requesterId: string, departmentId: string) {
-  return prisma.employee.findFirst({
-    where: {
-      id: { not: requesterId },
-      isActive: true,
-      designation: { approvalLevel: "DD" },
-      user: { is: { isActive: true } },
-      OR: [
-        { departmentId },
-        { additionalCharges: { some: { departmentId } } },
-      ],
-    },
-    select: { id: true },
-  });
-}
-
 /**
- * The department head who must answer first: its DD, or its HOD when the department has no
- * DD. Returns null when neither exists, so the request goes straight to the Secretary General.
+ * The department head who must answer first: its DD, or its HOD / an AD holding additional
+ * charge as acting HOD when there is no DD. Null means the request goes straight to the
+ * Secretary General.
  */
 async function findDepartmentHead(
   requesterId: string,
   departmentId: string,
 ): Promise<"DD" | "HOD" | null> {
-  if (await findDepartmentDd(requesterId, departmentId)) return "DD";
-  const hod = await prisma.employee.findFirst({
-    where: {
-      id: { not: requesterId },
-      isActive: true,
-      designation: { approvalLevel: "HOD" },
-      user: { is: { isActive: true } },
-      departmentId,
-    },
-    select: { id: true },
-  });
-  return hod ? "HOD" : null;
+  const head = await findHead(requesterId, departmentId);
+  return head?.level ?? null;
 }
 
 /** Is there an active Secretary General / Chairperson (or acting one) login who could answer? */
@@ -206,12 +181,23 @@ export async function listMyNocRequests(employeeId: string) {
 /** Requests waiting for this person's yes / no, by level (parent rights included). */
 function pendingWhere(me: ApproverIdentity): Prisma.NocRequestWhereInput {
   const or: Prisma.NocRequestWhereInput[] = [];
+  if (me.level === "STAFF" && me.actingHodDepartmentIds?.length) {
+    or.push({
+      status: "PENDING_DD",
+      approverLevel: "HOD",
+      approverDepartmentId: { in: me.actingHodDepartmentIds },
+    });
+  }
   if (me.level === "HOD") {
     or.push({
       status: "PENDING_DD",
       approverLevel: "HOD",
       approverDepartmentId: {
-        in: [me.departmentId, ...(me.chargeDepartmentIds ?? [])],
+        in: [
+          me.departmentId,
+          ...(me.chargeDepartmentIds ?? []),
+          ...(me.actingHodDepartmentIds ?? []),
+        ],
       },
     });
   }
@@ -237,7 +223,8 @@ function pendingWhere(me: ApproverIdentity): Prisma.NocRequestWhereInput {
 
 export async function listPendingNocForApprover(user: AuthUser) {
   const me = getApproverIdentity(user);
-  if (!me || me.level === "STAFF") return [];
+  if (!me || (me.level === "STAFF" && !me.actingHodDepartmentIds?.length))
+    return [];
   const rows = await prisma.nocRequest.findMany({
     where: pendingWhere(me),
     orderBy: { createdAt: "asc" },
@@ -249,7 +236,8 @@ export async function listPendingNocForApprover(user: AuthUser) {
 
 export async function countPendingNocForApprover(user: AuthUser) {
   const me = getApproverIdentity(user);
-  if (!me || me.level === "STAFF") return 0;
+  if (!me || (me.level === "STAFF" && !me.actingHodDepartmentIds?.length))
+    return 0;
   return prisma.nocRequest.count({ where: pendingWhere(me) });
 }
 

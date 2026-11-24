@@ -84,6 +84,10 @@ export default function EmployeePicker({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          // Enter here means "search this list", not "submit the whole report form".
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.preventDefault();
+          }}
           placeholder="Search name or code"
           aria-label="Search employees"
           className={`${field} w-56`}

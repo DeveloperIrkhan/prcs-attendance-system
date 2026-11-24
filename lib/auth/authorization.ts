@@ -36,7 +36,7 @@ export const getCurrentUser = cache(async () => {
         select: {
           id: true,
           departmentId: true,
-          designation: { select: { approvalLevel: true } },
+          designation: { select: { approvalLevel: true, title: true } },
           additionalCharges: { select: { departmentId: true } },
           actingApprovals: { select: { level: true } },
         },
@@ -91,13 +91,16 @@ function effectiveLevel(user: AuthUser): ApprovalLevel {
 /** The user's place in the leave approval chain (null if not linked to an employee). */
 export function getApproverIdentity(user: AuthUser): ApproverIdentity | null {
   if (!user.employee) return null;
+  const charges = user.employee.additionalCharges.map((c) => c.departmentId);
+  // A DD's charge is DD-level. Anyone else holding charge (AD / HOD) acts as the
+  // department's HOD there.
+  const isDd = user.employee.designation?.approvalLevel === "DD";
   return {
     employeeId: user.employee.id,
     departmentId: user.employee.departmentId,
     level: effectiveLevel(user),
-    chargeDepartmentIds: user.employee.additionalCharges.map(
-      (c) => c.departmentId,
-    ),
+    chargeDepartmentIds: isDd ? charges : [],
+    actingHodDepartmentIds: isDd ? [] : charges,
   };
 }
 
@@ -113,6 +116,10 @@ export function getDataScope(user: AuthUser): DataScope {
     departmentId: user.employee?.departmentId ?? null,
     chargeDepartmentIds:
       user.employee?.additionalCharges.map((c) => c.departmentId) ?? [],
+    actingHodDepartmentIds:
+      user.employee?.designation?.approvalLevel === "DD"
+        ? []
+        : (user.employee?.additionalCharges.map((c) => c.departmentId) ?? []),
   });
 }
 
@@ -124,6 +131,10 @@ export function getLeaveScope(user: AuthUser): DataScope | null {
     departmentId: user.employee?.departmentId ?? null,
     chargeDepartmentIds:
       user.employee?.additionalCharges.map((c) => c.departmentId) ?? [],
+    actingHodDepartmentIds:
+      user.employee?.designation?.approvalLevel === "DD"
+        ? []
+        : (user.employee?.additionalCharges.map((c) => c.departmentId) ?? []),
   });
 }
 

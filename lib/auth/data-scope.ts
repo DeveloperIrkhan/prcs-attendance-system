@@ -3,6 +3,7 @@
 //   Admin / HR / IT (permission attendance:view)  -> ALL
 //   CEO, Chairman (Secretary General, Chairperson)        -> ALL
 //   DD / HOD (head of department)                         -> DEPARTMENT (their own, plus any additional charge)
+//   AD holding additional charge (acting HOD)             -> DEPARTMENT (only the departments they hold)
 //   everyone else                                        -> SELF (only their own data)
 //
 // Pure functions: no database, easy to test.
@@ -22,6 +23,8 @@ export function resolveDataScope(input: {
   departmentId: string | null;
   /** departments the DD also looks after */
   chargeDepartmentIds?: string[];
+  /** departments where an AD / HOD acts as department head through additional charge */
+  actingHodDepartmentIds?: string[];
 }): DataScope {
   if (input.permissions.includes(PERMISSIONS.ATTENDANCE_VIEW)) {
     return { kind: "ALL" };
@@ -34,8 +37,20 @@ export function resolveDataScope(input: {
       kind: "DEPARTMENT",
       departmentId: input.departmentId,
       departmentIds: [
-        ...new Set([input.departmentId, ...(input.chargeDepartmentIds ?? [])]),
+        ...new Set([
+          input.departmentId,
+          ...(input.chargeDepartmentIds ?? []),
+          ...(input.actingHodDepartmentIds ?? []),
+        ]),
       ],
+    };
+  }
+  if (input.actingHodDepartmentIds?.length) {
+    // An AD acts as HOD only in the departments they hold charge of, not in their own.
+    return {
+      kind: "DEPARTMENT",
+      departmentId: input.actingHodDepartmentIds[0],
+      departmentIds: [...new Set(input.actingHodDepartmentIds)],
     };
   }
   return { kind: "SELF", employeeId: input.employeeId };
@@ -48,6 +63,7 @@ export function resolveDataScope(input: {
  *   leaves:manage (HR) or leaves:view   -> ALL
  *   CEO, Chairman (by designation)      -> ALL
  *   DD / HOD (by designation)           -> DEPARTMENT (their own, plus any additional charge)
+ *   AD holding additional charge        -> DEPARTMENT (the departments they lead as acting HOD)
  *   everyone else                       -> null (no access to the Leaves pages)
  */
 export function resolveLeaveScope(input: {
@@ -55,6 +71,8 @@ export function resolveLeaveScope(input: {
   level: ApprovalLevel;
   departmentId: string | null;
   chargeDepartmentIds?: string[];
+  /** departments where an AD / HOD acts as department head through additional charge */
+  actingHodDepartmentIds?: string[];
 }): DataScope | null {
   if (
     input.permissions.includes(PERMISSIONS.LEAVES_MANAGE) ||
@@ -70,8 +88,19 @@ export function resolveLeaveScope(input: {
       kind: "DEPARTMENT",
       departmentId: input.departmentId,
       departmentIds: [
-        ...new Set([input.departmentId, ...(input.chargeDepartmentIds ?? [])]),
+        ...new Set([
+          input.departmentId,
+          ...(input.chargeDepartmentIds ?? []),
+          ...(input.actingHodDepartmentIds ?? []),
+        ]),
       ],
+    };
+  }
+  if (input.actingHodDepartmentIds?.length) {
+    return {
+      kind: "DEPARTMENT",
+      departmentId: input.actingHodDepartmentIds[0],
+      departmentIds: [...new Set(input.actingHodDepartmentIds)],
     };
   }
   return null;

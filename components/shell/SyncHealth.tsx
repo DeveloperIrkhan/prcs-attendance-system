@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   SYNC_STATE_TEXT,
   describeAge,
@@ -30,20 +29,18 @@ const DOT: Record<SyncState, string> = {
   never: "bg-zinc-400",
 };
 
-/** Keeps "5 min ago" current, and asks the server for a fresh heartbeat every two minutes. */
+/**
+ * Keeps "5 min ago" current using the local clock. The heartbeat itself only changes when the
+ * sync worker writes it, so there is no reason to re-render the whole page on a timer: that
+ * made slow pages such as the salary report rebuild repeatedly and show their loading UI again.
+ */
 function useSyncHealth({ row, serverNow }: SyncHealthProps) {
-  const router = useRouter();
   const [now, setNow] = useState(serverNow);
 
   useEffect(() => {
-    let ticks = 0;
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-      ticks += 1;
-      if (ticks % 4 === 0) router.refresh(); // every 4 x 30 s
-    }, 30_000);
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(timer);
-  }, [router]);
+  }, []);
 
   return evaluateSyncHealth(row, now);
 }

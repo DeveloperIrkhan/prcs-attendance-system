@@ -147,6 +147,21 @@ assert.equal(
   false,
 );
 
+// An AD (STAFF designation) holding additional charge acts as HOD in that department only.
+const actingHod = {
+  employeeId: "x",
+  departmentId: "d2",
+  level: "STAFF" as const,
+  actingHodDepartmentIds: ["d1"],
+};
+assert.equal(can(actingHod, hodReq), true);
+assert.equal(can(actingHod, ddReq), false); // never decides a DD-routed request
+assert.equal(
+  can(actingHod, { ...hodReq, approverDepartmentId: "d3" }),
+  false,
+); // not a department they hold
+assert.equal(can({ ...actingHod, employeeId: "e1" }, hodReq), false); // never their own
+
 const ceoReq = {
   employeeId: "e1",
   approverLevel: "CEO" as const,

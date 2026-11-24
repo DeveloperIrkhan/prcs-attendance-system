@@ -18,14 +18,14 @@ model Department {
   name        String     @unique
   description String?
   employees   Employee[]
-  // DDs of other departments who also look after this department (additional charge)
+  // Department heads of other departments who also look after this one: DDs, or AD/HODs acting as HOD
   chargeHolders DepartmentCharge[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
 
-/// A DD who also holds additional charge of another department.
-/// Leave requests of that department can then be decided by this DD as well.
+/// A department head who also holds additional charge of another department: a DD, or an AD/HOD
+/// acting as that department's HOD when it has no DD. Their leave/NOC requests go here too.
 model DepartmentCharge {
   id           String   @id @default(cuid())
   employeeId   String

@@ -2,7 +2,7 @@ import SimpleForm from "@/components/SimpleForm";
 import {
   listActingApprovers,
   listActingCandidates,
-  listDdEmployees,
+  listChargeEmployees,
   listDepartmentsWithApprovers,
 } from "@/services/department.service";
 import {
@@ -20,10 +20,10 @@ import { requirePermission } from "@/lib/auth/authorization";
 
 export default async function DepartmentsPage() {
   await requirePermission(PERMISSIONS.DEPARTMENTS_MANAGE);
-  const [departments, ddEmployees, actingApprovers, actingCandidates] =
+  const [departments, chargeEmployees, actingApprovers, actingCandidates] =
     await Promise.all([
       listDepartmentsWithApprovers(),
-      listDdEmployees(),
+      listChargeEmployees(),
       listActingApprovers(),
       listActingCandidates(),
     ]);
@@ -180,7 +180,7 @@ export default async function DepartmentsPage() {
                         : "None"}
                     </p>
                     <p className="mt-2 text-xs text-zinc-500">
-                      Additional charge DD
+                      Additional charge (DD or acting HOD)
                     </p>
                     {d.chargeHolders.length === 0 ? (
                       <p>None</p>
@@ -194,7 +194,11 @@ export default async function DepartmentsPage() {
                             <span>
                               {c.employee.name}{" "}
                               <span className="text-xs text-zinc-500">
-                                ({c.employee.department.name})
+                                ({c.employee.department.name}, {" "}
+                                {c.employee.designation?.approvalLevel === "DD"
+                                  ? "DD"
+                                  : "acting HOD"}
+                                )
                               </span>
                             </span>
                             <RowActionForm
@@ -227,16 +231,18 @@ export default async function DepartmentsPage() {
                           fields={[
                             {
                               name: "employeeId",
-                              label: "DD",
+                              label: "Additional charge (DD / acting HOD)",
                               required: true,
                               options: [
-                                { value: "", label: "Select a DD" },
-                                ...ddEmployees
-                                  .filter((e) => e.departmentId !== d.id)
-                                  .map((e) => ({
-                                    value: e.id,
-                                    label: `${e.name} (${e.department.name})`,
-                                  })),
+                                { value: "", label: "Select an employee" },
+                                ...chargeEmployees.map((e) => ({
+                                  value: e.id,
+                                  label: `${e.name} (${e.department.name}) — ${
+                                    e.designation?.approvalLevel === "DD"
+                                      ? "DD"
+                                      : "acting HOD"
+                                  }`,
+                                })),
                               ],
                             },
                           ]}

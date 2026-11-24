@@ -71,7 +71,7 @@ export async function deleteDepartmentAction(
   return { ok: true };
 }
 
-/** A DD takes additional charge of this department (form field `id` is the department). */
+/** A DD, HOD or AD takes additional charge of this department (form field `id` is the department). */
 export async function addDepartmentChargeAction(
   _prev: ActionState,
   formData: FormData,
@@ -80,7 +80,7 @@ export async function addDepartmentChargeAction(
   const departmentId = String(formData.get("id") ?? "");
   const employeeId = String(formData.get("employeeId") ?? "");
   if (!departmentId) return { error: "Missing department id." };
-  if (!employeeId) return { error: "Select a DD." };
+  if (!employeeId) return { error: "Select a DD, HOD or AD." };
 
   try {
     await addDepartmentCharge(departmentId, employeeId);

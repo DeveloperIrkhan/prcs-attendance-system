@@ -35,6 +35,22 @@ assert.equal(
 assert.equal(scope({ ...base, level: "STAFF" }), null);
 assert.equal(scope({ permissions: [], level: "DD", departmentId: null }), null);
 
+// An AD holding additional charge acts as HOD only in the departments they hold,
+// not in their own AD department.
+const actingHod = scope({
+  ...base,
+  level: "STAFF",
+  actingHodDepartmentIds: ["d2", "d3"],
+});
+assert.deepEqual(actingHod, {
+  kind: "DEPARTMENT",
+  departmentId: "d2",
+  departmentIds: ["d2", "d3"],
+});
+assert.deepEqual(employeeWhereFor(actingHod!, "d1"), {
+  departmentId: { in: ["d2", "d3"] },
+});
+
 // A DD can never widen their scope through ?department=
 const dd = scope({ ...base, level: "DD", chargeDepartmentIds: ["d2"] })!;
 assert.deepEqual(employeeWhereFor(dd, "d9"), { departmentId: { in: ["d1", "d2"] } });

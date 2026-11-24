@@ -112,6 +112,7 @@ export function listDepartmentsWithApprovers() {
               name: true,
               isActive: true,
               department: { select: { name: true } },
+              designation: { select: { title: true, approvalLevel: true } },
             },
           },
         },
@@ -121,10 +122,35 @@ export function listDepartmentsWithApprovers() {
   });
 }
 
-/** Active employees whose designation is at DD level: the only ones who can hold additional charge. */
-export function listDdEmployees() {
+const ACTING_HOD_TITLE = "AD";
+
+type ChargeDesignation = { title: string; approvalLevel: string } | null;
+
+function isActingHodDesignation(designation: ChargeDesignation): boolean {
+  return (
+    designation?.approvalLevel === "HOD" ||
+    designation?.title.toLowerCase() === ACTING_HOD_TITLE.toLowerCase()
+  );
+}
+
+/**
+ * Active employees who may hold additional charge: DDs, HODs, and ADs who act as HOD
+ * for a department that has no DD.
+ */
+export function listChargeEmployees() {
   return prisma.employee.findMany({
-    where: { isActive: true, designation: { approvalLevel: "DD" } },
+    where: {
+      isActive: true,
+      OR: [
+        { designation: { approvalLevel: "DD" } },
+        { designation: { approvalLevel: "HOD" } },
+        {
+          designation: {
+            title: { equals: ACTING_HOD_TITLE, mode: "insensitive" },
+          },
+        },
+      ],
+    },
     orderBy: { name: "asc" },
     select: {
       id: true,
@@ -132,9 +158,13 @@ export function listDdEmployees() {
       employeeCode: true,
       departmentId: true,
       department: { select: { name: true } },
+      designation: { select: { title: true, approvalLevel: true } },
     },
   });
 }
+
+/** @deprecated Use listChargeEmployees; kept so older imports keep working. */
+export const listDdEmployees = listChargeEmployees;
 
 export async function addDepartmentCharge(
   departmentId: string,
@@ -152,21 +182,25 @@ export async function addDepartmentCharge(
         name: true,
         isActive: true,
         departmentId: true,
-        designation: { select: { approvalLevel: true } },
+        designation: { select: { title: true, approvalLevel: true } },
       },
     }),
   ]);
   if (!department) throw new ServiceError("Department not found.");
   if (!employee || !employee.isActive)
     throw new ServiceError("Employee not found or inactive.");
-  if (employee.designation?.approvalLevel !== "DD") {
+  const isDd = employee.designation?.approvalLevel === "DD";
+  const isActingHod = isActingHodDesignation(employee.designation);
+  if (!isDd && !isActingHod) {
     throw new ServiceError(
-      `${employee.name} is not a DD. Only an employee whose designation has approval level DD can hold additional charge.`,
+      `${employee.name} cannot hold additional charge. Only a DD, an HOD, or an AD acting as HOD can.`,
     );
   }
-  if (employee.departmentId === departmentId) {
+  // A DD already leads their own department. An AD / HOD, though, can be made acting HOD
+  // of the department they belong to when that department has no DD.
+  if (isDd && employee.departmentId === departmentId) {
     throw new ServiceError(
-      `${employee.name} already belongs to ${department.name}.`,
+      `${employee.name} already leads ${department.name} as its DD.`,
     );
   }
   const exists = await prisma.departmentCharge.findUnique({
@@ -185,8 +219,8 @@ export async function addDepartmentCharge(
     action: "department.charge-add",
     entity: "Department",
     entityId: departmentId,
-    summary: `Gave ${employee.name} additional charge of ${department.name}`,
-    after: { employeeId, departmentId },
+    summary: `Gave ${employee.name} (${isDd ? "DD" : "acting HOD"}) additional charge of ${department.name}`,
+    after: { employeeId, departmentId, level: isDd ? "DD" : "HOD" },
   });
   return created;
 }

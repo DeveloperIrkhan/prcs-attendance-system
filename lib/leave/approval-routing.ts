@@ -2,8 +2,9 @@
 //
 //  Requester        up to 3 working days        more than 3 working days
 //  STAFF (AD, SO…)  DD of the same department   Secretary General
-//                   (or the HOD when the
-//                   department has no DD)
+//                   (or the HOD / an AD holding
+//                   additional charge as acting
+//                   HOD when there is no DD)
 //  HOD              DD of the same department   Secretary General
 //                   (or the Secretary General
 //                   when there is no DD)
@@ -16,8 +17,8 @@
 // requests, Chairperson over every level).
 //
 // Department heads: a department is led by its DD. Departments that have no DD are led
-// by their HOD, so short leave requests of their staff go to the HOD instead of being
-// escalated to the Secretary General.
+// by their HOD, or by an AD given additional charge of that department (acting HOD), so
+// short leave requests of their staff go there instead of being escalated to the Secretary General.
 
 export type ApprovalLevel = "STAFF" | "HOD" | "DD" | "CEO" | "CHAIRMAN";
 export type ApproverLevel = Exclude<ApprovalLevel, "STAFF">;
@@ -61,7 +62,7 @@ export function isDepartmentHeadLevel(level: ApprovalLevel | null): boolean {
 export type Route = {
   /** null: no one in the chain can approve (Chairperson's own leave) */
   approverLevel: ApproverLevel | null;
-  /** true when only a department head (DD, or the HOD when there is no DD) may decide */
+  /** true when only a department head (DD, or the HOD / acting HOD when there is no DD) may decide */
   sameDepartment: boolean;
 };
 
@@ -103,6 +104,11 @@ export type ApproverIdentity = {
   level: ApprovalLevel;
   /** other departments this DD also looks after (additional charge) */
   chargeDepartmentIds?: string[];
+  /**
+   * Departments where this person acts as HOD through additional charge. An AD's designation
+   * is STAFF, but an AD holding charge of a department with no DD is its department head.
+   */
+  actingHodDepartmentIds?: string[];
 };
 
 export type RoutedRequest = {
@@ -126,12 +132,27 @@ export function canDecideRequest(
   if (!approver) return false;
   if (approver.employeeId === request.employeeId) return false;
   if (!request.approverLevel || request.approverLevel === "STAFF") return false;
-  if (approver.level === "STAFF") return false;
+
+  // An AD (STAFF designation) holding additional charge of a department acts as its HOD.
+  // They decide HOD-level requests for that department only, never their own AD requests
+  // and never requests routed to DD level.
+  if (approver.level === "STAFF") {
+    return (
+      request.approverLevel === "HOD" &&
+      request.approverDepartmentId !== null &&
+      (approver.actingHodDepartmentIds ?? []).includes(
+        request.approverDepartmentId,
+      )
+    );
+  }
 
   const inDepartment =
     request.approverDepartmentId !== null &&
     (approver.departmentId === request.approverDepartmentId ||
       (approver.chargeDepartmentIds ?? []).includes(
+        request.approverDepartmentId,
+      ) ||
+      (approver.actingHodDepartmentIds ?? []).includes(
         request.approverDepartmentId,
       ));
   const departmentScoped = isDepartmentHeadLevel(request.approverLevel);

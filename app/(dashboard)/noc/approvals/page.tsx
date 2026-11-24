@@ -10,13 +10,14 @@ export default async function NocApprovalsPage() {
   const user = await requireUser();
   const me = getApproverIdentity(user);
 
-  if (!me || me.level === "STAFF") {
+  if (!me || (me.level === "STAFF" && !me.actingHodDepartmentIds?.length)) {
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">NOC approvals</h1>
         <p className="text-zinc-600">
           You are not an approver. NOC requests are decided by the department
-          head (DD, or the HOD where there is no DD) and the Secretary General.
+          head (DD, or the HOD / acting HOD where there is no DD) and the
+          Secretary General.
         </p>
       </div>
     );

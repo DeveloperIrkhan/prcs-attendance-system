@@ -20,26 +20,32 @@ export default async function LeaveApprovalsPage() {
   const user = await requireUser();
   const me = getApproverIdentity(user);
 
-  if (!me || me.level === "STAFF") {
+  const isActingHod = me?.level === "STAFF" && !!me.actingHodDepartmentIds?.length;
+  if (!me || (me.level === "STAFF" && !isActingHod)) {
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">Leave approvals</h1>
         <p className="rounded bg-zinc-100 p-3 text-sm text-zinc-700">
           Your designation does not approve leave. If it should, ask HR to set
-          its approval level under Designations.
+          its approval level under Designations or give you additional charge
+          of a department as acting HOD.
         </p>
       </div>
     );
   }
 
   const requests = await listPendingForApprover(user);
+  const scopeText =
+    me.level === "STAFF"
+      ? "leave requests of staff in the departments you lead as acting HOD (up to 3 working days)"
+      : SCOPE[me.level];
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-semibold">Leave approvals</h1>
         <p className="text-sm text-zinc-600">
-          Waiting for your decision: {SCOPE[me.level]}.
+          Waiting for your decision: {scopeText}.
         </p>
       </div>
 
@@ -86,7 +92,7 @@ export default async function LeaveApprovalsPage() {
                   {r.approverLevel && r.approverLevel !== "STAFF"
                     ? APPROVER_LABEL[r.approverLevel]
                     : ""}
-                  {r.approverLevel !== me.level && (
+                  {r.approverLevel !== (isActingHod ? "HOD" : me.level) && (
                     <div className="text-xs text-zinc-500">Parent rights</div>
                   )}
                 </td>
