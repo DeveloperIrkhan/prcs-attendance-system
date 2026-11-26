@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   CalendarDays,
   FileCheck,
+  Fingerprint,
   History,
   LayoutDashboard,
   ScrollText,
@@ -34,6 +35,7 @@ const ICONS: Record<IconKey, LucideIcon> = {
   history: History,
   calendar: Calendar,
   rules: SlidersHorizontal,
+  devices: Fingerprint,
   noc: FileCheck,
   audit: ScrollText,
 };

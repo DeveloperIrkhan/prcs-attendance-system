@@ -14,6 +14,7 @@ export type IconKey =
   | "history"
   | "calendar"
   | "rules"
+  | "devices"
   | "noc"
   | "audit";
 
@@ -195,6 +196,12 @@ export function buildNav(
             href: "/attendance/settings",
             label: "Rules",
             icon: "rules",
+            show: can(P.ATTENDANCE_SETTINGS),
+          },
+          {
+            href: "/attendance/devices",
+            label: "Biometric devices",
+            icon: "devices",
             show: can(P.ATTENDANCE_SETTINGS),
           },
           {

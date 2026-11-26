@@ -129,6 +129,16 @@ erDiagram
   String uploadedById
   DateTime uploadedAt
 }
+"Device" {
+  String id PK
+  String name
+  String ip
+  Int port
+  Int commKey
+  Boolean isActive
+  DateTime createdAt
+  DateTime updatedAt
+}
 "SyncStatus" {
   String id PK
   DateTime lastAttemptAt "nullable"
@@ -306,8 +316,8 @@ Properties as follows:
 
 ### `DepartmentCharge`
 
-A DD who also holds additional charge of another department.
-Leave requests of that department can then be decided by this DD as well.
+A department head who also holds additional charge of another department: a DD, or an AD/HOD
+acting as that department's HOD when it has no DD. Their leave/NOC requests go here too.
 
 Properties as follows:
 
@@ -452,6 +462,19 @@ Properties as follows:
 - `data`:
 - `uploadedById`:
 - `uploadedAt`:
+
+### `Device`
+
+Properties as follows:
+
+- `id`:
+- `name`:
+- `ip`:
+- `port`:
+- `commKey`:
+- `isActive`:
+- `createdAt`:
+- `updatedAt`:
 
 ### `SyncStatus`
 

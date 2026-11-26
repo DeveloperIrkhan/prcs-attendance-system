@@ -208,6 +208,19 @@ model NocDocument {
   uploadedAt   DateTime   @default(now())
 }
 
+model Device {
+  id        String   @id @default(cuid())
+  name      String
+  ip        String
+  port      Int      @default(4370)
+  commKey   Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ip, port])
+}
+
 model SyncStatus {
   id                  String    @id // the device id, e.g. "uface800-main"
   lastAttemptAt       DateTime?

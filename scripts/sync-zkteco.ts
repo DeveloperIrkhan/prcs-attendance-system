@@ -36,17 +36,10 @@ type DeviceConfig = {
 };
 
 /**
- * Devices are read from `ZK_DEVICES`, a JSON list, so one poller can serve a whole office:
- *
- *   ZK_DEVICES='[
- *     {"id":"gate-left","ip":"192.168.1.101","port":4370,"commKey":0},
- *     {"id":"gate-right","ip":"192.168.1.102"}
- *   ]'
- *
- * `ZK_DEVICE_IP` (with `ZK_DEVICE_ID`, `ZK_DEVICE_PORT`, `ZK_COMM_KEY`) still works for a
- * single-device install.
+ * Devices are read from the database (Biometric devices page). If no device rows exist yet,
+ * fall back to env config (`ZK_DEVICES` or `ZK_DEVICE_IP`) so existing deployments keep working.
  */
-function readDevices(): DeviceConfig[] {
+function readEnvDevices(): DeviceConfig[] {
   const raw = process.env.ZK_DEVICES?.trim();
 
   if (raw) {
@@ -69,7 +62,6 @@ function readDevices(): DeviceConfig[] {
       const ip = typeof item.ip === "string" ? item.ip.trim() : "";
       if (!ip) throw new Error(`ZK_DEVICES[${index}].ip is required`);
 
-      // Default the heartbeat id to the last IP octet: readable, and unique per device.
       const id =
         typeof item.id === "string" && item.id.trim()
           ? item.id.trim()
@@ -96,11 +88,7 @@ function readDevices(): DeviceConfig[] {
   }
 
   const ip = process.env.ZK_DEVICE_IP;
-  if (!ip) {
-    throw new Error(
-      "Set ZK_DEVICES (JSON list) or ZK_DEVICE_IP in .env to reach the attendance devices",
-    );
-  }
+  if (!ip) return [];
   return [
     {
       id: process.env.ZK_DEVICE_ID ?? `device-${ip.split(".").pop() ?? "main"}`,
@@ -111,7 +99,31 @@ function readDevices(): DeviceConfig[] {
   ];
 }
 
-const DEVICES = readDevices();
+async function loadDevices(): Promise<DeviceConfig[]> {
+  try {
+    const rows = await prisma.device.findMany({ orderBy: { createdAt: "asc" } });
+    if (rows.length > 0) {
+      const active = rows.filter((d) => d.isActive);
+      console.log(
+        `[sync] Loaded ${active.length} active device(s) from database (${rows.length} total configured).`,
+      );
+      return active.map((d) => ({ id: d.id, ip: d.ip, port: d.port, commKey: d.commKey }));
+    }
+  } catch (error) {
+    console.warn(
+      "[sync] Could not read devices from database, falling back to env config:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  const envDevices = readEnvDevices();
+  if (envDevices.length > 0) {
+    console.log(`[sync] Using ${envDevices.length} device(s) from environment config.`);
+  }
+  return envDevices;
+}
+
+let DEVICES: DeviceConfig[] = [];
 
 type DeviceRecord = {
   userSn?: number;
@@ -279,16 +291,39 @@ async function poll() {
     const runs: DeviceRun[] = [];
     const failures: { device: DeviceConfig; error: string }[] = [];
 
+    const intervalSeconds = Math.round(POLL_INTERVAL_MS / 1000);
+
     // Sequential on purpose: four small devices finish in seconds, and one unreachable
-    // machine cannot slow the others down.
+    // machine cannot slow the others down. Record each heartbeat immediately so one slow or
+    // full device does not leave the others looking stale on the dashboard.
     for (const device of DEVICES) {
       if (stopping) break;
       try {
-        runs.push(await syncDevice(device));
+        const run = await syncDevice(device);
+        runs.push(run);
+        if (!DRY_RUN) {
+          try {
+            await recordSyncSuccess(
+              device.id,
+              run.retrieved,
+              run.inserted,
+              intervalSeconds,
+            );
+          } catch (heartbeatError) {
+            console.error(`[${device.id}] Could not record sync state:`, heartbeatError);
+          }
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`[${device.id}] Sync failed:`, error);
         failures.push({ device, error: message });
+        if (!DRY_RUN) {
+          try {
+            await recordSyncFailure(device.id, message, intervalSeconds);
+          } catch (heartbeatError) {
+            console.error(`[${device.id}] Could not record sync failure:`, heartbeatError);
+          }
+        }
       }
     }
 
@@ -312,39 +347,15 @@ async function poll() {
     }
 
     // A dry run only reads; heartbeats would make the dashboard claim a real sync happened.
-    if (!DRY_RUN) {
-      // Heartbeats are written after processing, so a green badge means "punches are in the
-      // database and attendance has been recalculated", not merely "the device answered".
+    // Per-device success/failure was already recorded immediately above. If attendance
+    // processing failed, mark the devices that were read successfully as failing too, because
+    // their punches were not fully reflected in attendance.
+    if (!DRY_RUN && processingError) {
       for (const run of runs) {
         try {
-          if (processingError) {
-            await recordSyncFailure(
-              run.device.id,
-              processingError,
-              Math.round(POLL_INTERVAL_MS / 1000),
-            );
-          } else {
-            await recordSyncSuccess(
-              run.device.id,
-              run.retrieved,
-              run.inserted,
-              Math.round(POLL_INTERVAL_MS / 1000),
-            );
-          }
+          await recordSyncFailure(run.device.id, processingError, intervalSeconds);
         } catch (heartbeatError) {
           console.error(`[${run.device.id}] Could not record sync state:`, heartbeatError);
-        }
-      }
-
-      for (const failure of failures) {
-        try {
-          await recordSyncFailure(
-            failure.device.id,
-            failure.error,
-            Math.round(POLL_INTERVAL_MS / 1000),
-          );
-        } catch (heartbeatError) {
-          console.error(`[${failure.device.id}] Could not record sync failure:`, heartbeatError);
         }
       }
     }
@@ -383,9 +394,21 @@ async function shutdown() {
 process.once("SIGINT", () => void shutdown());
 process.once("SIGTERM", () => void shutdown());
 
-console.log(
-  `Starting attendance synchronization for ${DEVICES.length} device(s): ` +
-    DEVICES.map((device) => `${device.id} (${device.ip}:${device.port})`).join(", ") +
-    (DRY_RUN ? " [dry run: no writes]" : ONCE ? " [single pass]" : ""),
-);
-void poll();
+async function start() {
+  DEVICES = await loadDevices();
+  if (DEVICES.length === 0) {
+    console.error(
+      "[sync] No biometric devices configured. Add devices in Attendance > Biometric devices, or set ZK_DEVICES / ZK_DEVICE_IP in .env.",
+    );
+    await shutdown();
+    return;
+  }
+  console.log(
+    `Starting attendance synchronization for ${DEVICES.length} device(s): ` +
+      DEVICES.map((device) => `${device.id} (${device.ip}:${device.port})`).join(", ") +
+      (DRY_RUN ? " [dry run: no writes]" : ONCE ? " [single pass]" : ""),
+  );
+  void poll();
+}
+
+void start();

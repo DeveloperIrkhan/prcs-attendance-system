@@ -44,7 +44,7 @@ export async function listEmployees(
   const [items, total] = await prisma.$transaction([
     prisma.employee.findMany({
       where,
-      orderBy: { employeeCode: "asc" },
+      orderBy: { id: "asc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: {
